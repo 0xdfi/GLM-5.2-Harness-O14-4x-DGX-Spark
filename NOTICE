@@ -1,0 +1,12 @@
+GLM-5.2 Harness O14 on 4× DGX Spark
+Copyright 2026 0xdfi and contributors.
+
+This distribution includes modified source files from the vLLM project,
+licensed under Apache License 2.0 and retaining their SPDX attribution.
+
+The Build A Triton kernel and O14 recipe/documentation are distributed under
+Apache License 2.0. NVIDIA, DGX, CUDA, and related names are trademarks of
+their respective owners. GLM model weights, B12X dependencies, vLLM, PyTorch,
+Ray, FlashInfer, Triton, and checkpoint artifacts are not relicensed by this
+repository; consult their upstream licenses. No checkpoint weights or compiled
+third-party artifacts are included.

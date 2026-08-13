@@ -1,0 +1,37 @@
+# syntax=docker/dockerfile:1
+# Public O14 reconstruction layer. BASE_IMAGE must already contain the documented
+# vLLM 0.27 custom-port base; this is not compatible with unmodified upstream.
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+ARG VLLM_SITE=/usr/local/lib/python3.12/dist-packages
+
+COPY overlays/marlin_moe.py ${VLLM_SITE}/vllm/model_executor/layers/fused_moe/experts/marlin_moe.py
+COPY overlays/speculator.py ${VLLM_SITE}/vllm/v1/worker/gpu/spec_decode/speculator.py
+COPY overlays/mla_attention.py ${VLLM_SITE}/vllm/model_executor/layers/attention/mla_attention.py
+COPY overlays/logits_processor.py ${VLLM_SITE}/vllm/model_executor/layers/logits_processor.py
+COPY kernels/builda_bmm_v0.py ${VLLM_SITE}/vllm/model_executor/layers/attention/builda_bmm_v0.py
+# V1 is retained as tested development evidence but is not imported by the live wrapper.
+COPY kernels/builda_bmm_v1.py ${VLLM_SITE}/vllm/model_executor/layers/attention/builda_bmm_v1.py
+COPY runtime/r17_shim.py /opt/o14/r17_shim.py
+COPY patches/apply_o14_overlays.py /opt/o14/apply_o14_overlays.py
+
+RUN set -eu; \
+    python3 -m py_compile \
+      ${VLLM_SITE}/vllm/model_executor/layers/fused_moe/experts/marlin_moe.py \
+      ${VLLM_SITE}/vllm/v1/worker/gpu/spec_decode/speculator.py \
+      ${VLLM_SITE}/vllm/model_executor/layers/attention/mla_attention.py \
+      ${VLLM_SITE}/vllm/model_executor/layers/logits_processor.py \
+      ${VLLM_SITE}/vllm/model_executor/layers/attention/builda_bmm_v0.py \
+      ${VLLM_SITE}/vllm/model_executor/layers/attention/builda_bmm_v1.py \
+      /opt/o14/r17_shim.py; \
+    grep -q 'builda_bmm_v0 import' ${VLLM_SITE}/vllm/model_executor/layers/attention/mla_attention.py; \
+    ! grep -q 'builda_bmm_v1 import' ${VLLM_SITE}/vllm/model_executor/layers/attention/mla_attention.py; \
+    grep -q VLLM_MOE_MARLIN_ATOMIC_ADD ${VLLM_SITE}/vllm/model_executor/layers/fused_moe/experts/marlin_moe.py; \
+    grep -q R17_DRAFT_TEMP_SCALE ${VLLM_SITE}/vllm/v1/worker/gpu/spec_decode/speculator.py; \
+    grep -q 'FIRST RESCORE FIRED' ${VLLM_SITE}/vllm/model_executor/layers/logits_processor.py
+
+LABEL org.opencontainers.image.title="GLM-5.2 Harness O14 overlay" \
+      org.opencontainers.image.description="O14 source overlays for the vLLM 0.27 custom runtime" \
+      com.nous.r17.stage="o14" \
+      com.nous.r17.builda.active="v0"

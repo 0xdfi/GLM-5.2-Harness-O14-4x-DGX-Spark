@@ -1,0 +1,94 @@
+{
+  "schema": "glm52-o14-public-evidence/2",
+  "captured_date": "2026-08-13",
+  "campaign_source_commit": "698b9085c3aed47de5513a720204ed788b607f6a",
+  "final_battery_commit": "c3e3f4cdfb7a8d4f56a4f66380900ff48c30a35d",
+  "final_battery_coauthor": "Claude Fable 5 <noreply@anthropic.com>",
+  "runtime": {
+    "nodes": 4,
+    "hardware": "NVIDIA DGX Spark / GB10",
+    "parallelism": {"tp": 4, "dcp": 1, "pp": 1},
+    "vllm_package": "0.27.2.dev0+g6e448d0ea.d20260812",
+    "vllm_source_line": "v0.27.1",
+    "vllm_source_commit_short": "6e448d0ea",
+    "torch": "2.11.0+cu130",
+    "ray": "2.56.0",
+    "flashinfer_python": "0.6.15",
+    "image_tag": "glm52-r17:o14-20260813",
+    "image_digest": "sha256:d79f7410c475782bc00ee970c39a357e74206106ef247e57aea19607d7ebcb67",
+    "max_model_len": 399000,
+    "max_num_sequences": 4,
+    "max_num_batched_tokens": 2048,
+    "kv_cache_dtype": "nvfp4_ds_mla",
+    "kv_cache_bytes_per_rank": 12792889000,
+    "attention_backend": "B12X_MLA_SPARSE",
+    "moe_backend": "marlin",
+    "adaptive_mtp_depths": [2, 4, 5],
+    "adaptive_mtp_window": 32,
+    "cuda_graph_capture_sizes": [6, 12, 18, 24],
+    "builda_active_version": "v0",
+    "builda_v1_present_in_image": true,
+    "builda_v1_wired_into_live_wrapper": false,
+    "lmhead_exact_rescore": {
+      "top_m": 64,
+      "required": true,
+      "first_rescore_fired_all_four_ranks": true,
+      "changed_entries_by_tp_rank": [84, 100, 114, 112]
+    }
+  },
+  "source_evidence": {
+    "all_four_rank_hashes_matched": true,
+    "live_builda_bmm_v0_sha256": "965b6aeaf3a0c41abefec89a31592f6b8061a053053831be7c5e6f7560857515",
+    "live_builda_bmm_v1_sha256": "ee3145bee53a67dbff35f0556dfdcc21ac89a7038f3bd22cd0687928e38053e4",
+    "live_mla_attention_sha256": "ef38f75c7aa57958ab3ced69f8a1fd613bf1c29d2210bc177db15c45660eb044",
+    "live_logits_processor_sha256": "5ab8890051bf82da012a2c7357bda60fb011469ebf42ff647fffba8416fe4dfa",
+    "published_mla_attention_redaction": "One private-path comment was replaced; executable source is unchanged."
+  },
+  "measurements": [
+    {
+      "class": "cold_prose",
+      "concurrency": 1,
+      "metric": "decode_tok_s",
+      "values": [25.4, 25.61],
+      "steps_per_second": [10.78, 11.14],
+      "accepted_per_step": [1.353, 1.296],
+      "contaminated": [false, false]
+    },
+    {
+      "class": "cold_prose",
+      "concurrency": 4,
+      "metric": "aggregate_decode_tok_s",
+      "values": [54.68, 53.62],
+      "steps_per_second": [23.34, 22.23],
+      "accepted_per_step": [1.344, 1.412],
+      "contaminated": [false, false]
+    },
+    {
+      "class": "predictable_peak",
+      "concurrency": 1,
+      "metric": "decode_tok_s",
+      "values": [36.63],
+      "accepted_per_step": 3.265,
+      "completion_tokens": 900
+    },
+    {
+      "class": "predictable_peak",
+      "concurrency": 4,
+      "metric": "aggregate_decode_tok_s",
+      "values": [80.56],
+      "accepted_per_step": 3.934,
+      "completion_tokens": 3515
+    },
+    {
+      "class": "cold_prefill",
+      "input_tokens": 187022,
+      "elapsed_seconds": 282.9,
+      "metric": "prefill_tok_s",
+      "values": [661.1],
+      "gate": "PASS"
+    }
+  ],
+  "noise_note": "Campaign noise band was plus/minus 5 percent at n=1-2 batteries.",
+  "raw_recovered_tool_outputs_included": true,
+  "attribution_correction": "The Fable handoff said Build A v1; direct four-rank source inspection proved the measured O14 call path imported Build A v0."
+}
