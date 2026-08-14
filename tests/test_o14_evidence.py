@@ -3,13 +3,63 @@
 from __future__ import annotations
 
 import json
+import os
 import pathlib
+import subprocess
+import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 class O14EvidenceTest(unittest.TestCase):
+    def test_runtime_recipe_accepts_stock_and_optional_sidecar_profiles(self) -> None:
+        script = ROOT / "recipe/serve-o14.sh"
+        with tempfile.TemporaryDirectory() as tmp:
+            model = pathlib.Path(tmp)
+            env = os.environ.copy()
+            env.update(
+                MODEL_PATH=str(model),
+                O14_LMHEAD_PROFILE="auto",
+                VLLM_LMHEAD_V2_REQUIRE="1",
+                VLLM_LMHEAD_V2_SIDECAR=str(model / "missing.safetensors"),
+            )
+            stock = subprocess.run(
+                ["bash", "-x", str(script), "render"],
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(stock.returncode, 0, stock.stderr)
+            self.assertIn("VLLM_LMHEAD_V2_REQUIRE=0", stock.stderr)
+
+            sidecar = model / "lmhead_w8v2_sidecar.safetensors"
+            sidecar.touch()
+            env.update(
+                O14_LMHEAD_PROFILE="required",
+                VLLM_LMHEAD_V2_SIDECAR=str(sidecar),
+            )
+            exact = subprocess.run(
+                ["bash", "-x", str(script), "render"],
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(exact.returncode, 0, exact.stderr)
+            self.assertIn("VLLM_LMHEAD_V2_REQUIRE=1", exact.stderr)
+
+            sidecar.unlink()
+            missing = subprocess.run(
+                ["bash", str(script), "render"],
+                env=env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(missing.returncode, 66)
+
     def test_active_builda_version_matches_deployed_wrapper(self) -> None:
         data = json.loads((ROOT / "evidence/o14-results.json").read_text())
         mla = (ROOT / "overlays/mla_attention.py").read_text()

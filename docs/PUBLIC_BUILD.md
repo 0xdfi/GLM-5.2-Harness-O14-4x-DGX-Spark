@@ -18,4 +18,4 @@ PYTHONDONTWRITEBYTECODE=1 python3 reproducibility/verify.py
 docker build -f docker/Dockerfile.repro -t glm52-o14:public-repro .
 ```
 
-The static closure check has been run. A clean public image build and benchmark rerun are not claimed yet. Model weights and the W8 sidecar remain external prerequisites.
+The static closure check has been run. A clean public image build and benchmark rerun are not claimed yet. Model weights remain external. The W8 sidecar is optional for ordinary stock or modified QuantTrio serving and required only when reproducing the measured exact-head profile.

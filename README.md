@@ -113,7 +113,7 @@ set -a; source .env.o14; set +a
 bash recipe/serve-o14.sh render
 ```
 
-The serving script renders by default. It executes only with `O14_EXECUTE=1` and refuses to run if the model path is missing. Four-node Ray/RDMA formation, checkpoint/sidecar placement, and rollback remain operator responsibilities.
+The serving script renders by default. It executes only with `O14_EXECUTE=1` and refuses to run if the model path is missing. The runtime accepts stock QuantTrio and weight-modified/obliterated QuantTrio checkpoints. `O14_LMHEAD_PROFILE=auto` makes the W8 sidecar optional and enables exact-head rescoring only when that file is present. Four-node Ray/RDMA formation, checkpoint placement, and rollback remain operator responsibilities.
 
 ## Claim boundary
 

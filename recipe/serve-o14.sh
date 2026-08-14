@@ -17,6 +17,42 @@ export R17_DRAFT_TEMP_SCALE="${R17_DRAFT_TEMP_SCALE:-1.0}"
 export KV_FP8_ROPE="${KV_FP8_ROPE:-1}"
 export CUDA_DEVICE_MAX_CONNECTIONS="${CUDA_DEVICE_MAX_CONNECTIONS:-4}"
 
+# The runtime works with stock/modified QuantTrio checkpoints and with the
+# O14 W8-head lineage. Exact-head rescoring is an optional checkpoint feature,
+# not a prerequisite for the runtime.
+lmhead_profile="${O14_LMHEAD_PROFILE:-auto}"
+lmhead_default="${MODEL_PATH%/}/lmhead_w8v2_sidecar.safetensors"
+lmhead_candidate="${VLLM_LMHEAD_V2_SIDECAR:-${lmhead_default}}"
+case "${lmhead_profile}" in
+  auto)
+    if [[ -f "${lmhead_candidate}" ]]; then
+      export VLLM_LMHEAD_V2_SIDECAR="${lmhead_candidate}"
+      export VLLM_LMHEAD_V2_TOPM="${VLLM_LMHEAD_V2_TOPM:-64}"
+      export VLLM_LMHEAD_V2_REQUIRE=1
+    else
+      unset VLLM_LMHEAD_V2_SIDECAR VLLM_LMHEAD_V2_TOPM
+      export VLLM_LMHEAD_V2_REQUIRE=0
+    fi
+    ;;
+  off)
+    unset VLLM_LMHEAD_V2_SIDECAR VLLM_LMHEAD_V2_TOPM
+    export VLLM_LMHEAD_V2_REQUIRE=0
+    ;;
+  required)
+    if [[ ! -f "${lmhead_candidate}" ]]; then
+      echo "O14_LMHEAD_PROFILE=required but sidecar is missing: ${lmhead_candidate}" >&2
+      exit 66
+    fi
+    export VLLM_LMHEAD_V2_SIDECAR="${lmhead_candidate}"
+    export VLLM_LMHEAD_V2_TOPM="${VLLM_LMHEAD_V2_TOPM:-64}"
+    export VLLM_LMHEAD_V2_REQUIRE=1
+    ;;
+  *)
+    echo "Invalid O14_LMHEAD_PROFILE=${lmhead_profile}; use auto, off, or required." >&2
+    exit 64
+    ;;
+esac
+
 spec="$(python3 - "${MODEL_PATH}" <<'PY'
 import json, sys
 print(json.dumps({

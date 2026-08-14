@@ -31,4 +31,4 @@ docker run --rm -e MODEL_PATH=/models glm52-o14:public-repro render
 
 ## Boundary
 
-Model weights are not bundled. The runtime recipe is public and source-complete; reproducing the published benchmark additionally requires the same checkpoint/W8 sidecar, four GB10 nodes, and equivalent RoCE/NCCL topology. The repository does not claim that a clean public image build or benchmark rerun has already been completed.
+Model weights are not bundled. Stock QuantTrio and weight-modified/obliterated QuantTrio checkpoints use the same runtime recipe; the optional W8 sidecar is auto-detected. Reproducing the published benchmark additionally requires the same checkpoint/W8 sidecar, four GB10 nodes, and equivalent RoCE/NCCL topology. The repository does not claim that a clean public image build or benchmark rerun has already been completed.
