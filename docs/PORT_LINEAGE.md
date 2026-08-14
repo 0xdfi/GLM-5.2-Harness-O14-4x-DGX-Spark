@@ -23,7 +23,7 @@ A final port lane handled additional load-bearing surfaces:
 - `kv_cache_interface.py`: NVFP4 quant-mode recognition and 368-byte/token page accounting;
 - DFlash speculator signature compatibility.
 
-The consolidated release chart records a **26-file custom port**. Larger audit inventories include checked-but-obsolete hunks and overlapping surfaces; this repository keeps the shipped release count rather than inflating it from audit rows.
+The campaign's consolidated release count is **26 files**. A separate audit counted **27 Python files** under a different scope. Neither count is a reproducible public patch manifest, and the scope reconciliation is unpublished.
 
 ## Custom runtime work that reached O14
 

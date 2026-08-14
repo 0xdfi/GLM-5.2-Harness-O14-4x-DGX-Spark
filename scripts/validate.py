@@ -32,6 +32,7 @@ REQUIRED = {
     "docs/CUSTOM_RUNTIME.md",
     "docs/PORT_LINEAGE.md",
     "docs/PROVENANCE.md",
+    "docs/VLLM_UPSTREAMING.md",
     "evidence/o14-results.json",
     "evidence/final-o14-battery.jsonl",
     "evidence/FABLE5_CAMPAIGN_LEDGER.md",
@@ -125,7 +126,56 @@ for token in (
     "Build A v0 is the kernel active",
     "FIRST RESCORE FIRED",
     "71/71",
+    "docs/VLLM_UPSTREAMING.md",
 ):
     assert token in readme, token
+
+upstreaming = (ROOT / "docs/VLLM_UPSTREAMING.md").read_text()
+upstreaming_lines = upstreaming.splitlines()
+catalogue_header = (
+    "| Feature family | Ownership / provenance | Public O14 source / evidence "
+    "| Active in measured O14? | Frozen vLLM-main status | Upstream action "
+    "and public thread | Missing proof before action |"
+)
+catalogue_start = upstreaming_lines.index(catalogue_header) + 2
+catalogue: dict[str, list[str]] = {}
+for line in upstreaming_lines[catalogue_start:]:
+    if not line.startswith("|"):
+        break
+    cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+    assert len(cells) == 7, cells[0]
+    assert "](" in cells[2], cells[0]
+    catalogue[cells[0]] = cells
+assert len(catalogue) == 18
+
+probabilistic = " ".join(catalogue["**O14 probabilistic draft sampling**"])
+for token in (
+    "Native/vLLM-derived",
+    "draft_sample_method=probabilistic",
+    "draft_sample_method={greedy,probabilistic}",
+    "**No** contribution",
+    "shaped draft distribution `q`",
+    "DraftModelSpeculator.sample_draft",
+):
+    assert token in probabilistic, token
+
+full_cg = " ".join(catalogue["**Full-CUDA-graph adaptive verification shapes**"])
+for token in (
+    "6/12/18/24",
+    "DCP1 does **not** validate data parallelism (DP)",
+    "dynamic speculative decoding nevertheless remained disabled under DP",
+    "93e2ab71119ff08805adc93be75196450382b088",
+    "actual DP>1 multi-rank evidence",
+    "graph-utils/warmup/model-runner implementation is **not published**",
+):
+    assert token in full_cg, token
+
+for feature in (
+    "**Adaptive MTP depths 2/4/5 and telemetry**",
+    "**B12X sparse MLA, sparse indexer, and int64/direct-K repair**",
+    "**Compact NVFP4 MLA KV (`nvfp4_ds_mla`)**",
+    "**Quantized MTP packed-module loading**",
+):
+    assert "not published" in catalogue[feature][2].lower(), feature
 
 print("VALIDATION_OK")

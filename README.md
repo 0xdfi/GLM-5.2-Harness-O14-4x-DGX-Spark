@@ -6,7 +6,7 @@
 
 Public reconstruction pack for the O14 configuration measured and left serving on a four-node DGX Spark/GB10 cluster on 2026-08-13.
 
-O14 is a TP4, 399K-context GLM-5.2 serving stack built on the vLLM 0.27 line with a 26-file custom runtime port, sparse MLA, compact NVFP4 KV, adaptive MTP, full CUDA graphs, a custom Triton MLA BMM, an exact-rescore W8 head path, and an env-gated Marlin MoE change.
+O14 is a TP4, 399K-context GLM-5.2 serving stack built on the vLLM 0.27 line. The campaign's consolidated custom-runtime release count is 26 files; the stack includes sparse MLA, compact NVFP4 KV, adaptive MTP, full CUDA graphs, a custom Triton MLA BMM, an exact-rescore W8 head path, and an env-gated Marlin MoE change.
 
 This repository contains the publishable recipe, live-derived O14 overlay sources, sanitized benchmark protocols, raw final-battery values recovered from the Fable 5 session transcript, and a provenance boundary. It does **not** contain checkpoint weights, the private base image, compiled artifacts, host addresses, credentials, or a turnkey cluster controller.
 
@@ -60,7 +60,7 @@ The exact W8 top-64 rescore path was separately verified in worker logs: `FIRST 
 
 ## What is custom
 
-The vLLM 0.27 rebuild carried a campaign-documented 26-file runtime port, including:
+The vLLM 0.27 rebuild carried the campaign's consolidated release inventory of 26 runtime-port files, including:
 
 - B12X sparse MLA, indexer integration, and the int64 sparse-index repair;
 - compact `nvfp4_ds_mla` KV dispatch, accounting, and attention guards;
@@ -77,6 +77,12 @@ The vLLM 0.27 rebuild carried a campaign-documented 26-file runtime port, includ
 The campaign also tested and rejected several paths instead of hiding them: a correct but slow CUTE-DSL BMM, a dense W8A16 Triton replacement that passed **71/71 correctness checks**, won 0/7 relevant shapes, and projected a regression, an MTP controller that lost in causal replay, and an unloadable `eh_proj` INT8 arm.
 
 The exact live sources, kernels, reconstruction layer, and fail-closed applicator are in [`overlays/`](overlays/), [`kernels/`](kernels/), [`runtime/`](runtime/), [`docker/`](docker/), and [`patches/`](patches/). The broader 0.27 port is documented rather than falsely presented as a clean stock-vLLM patch: several surfaces were rewritten against changed APIs, and the private pre-O14 base image is not published.
+
+## Upstream contribution status
+
+See [`docs/VLLM_UPSTREAMING.md`](docs/VLLM_UPSTREAMING.md) for the frozen
+O14-to-vLLM feature catalogue, attribution boundaries, ranked contribution
+sequence, evidence requirements, and no-spam engagement plan.
 
 ## Repository map
 

@@ -4,9 +4,26 @@ Copyright 2026 0xdfi and contributors.
 This distribution includes modified source files from the vLLM project,
 licensed under Apache License 2.0 and retaining their SPDX attribution.
 
-The Build A Triton kernel and O14 recipe/documentation are distributed under
-Apache License 2.0. NVIDIA, DGX, CUDA, and related names are trademarks of
-their respective owners. GLM model weights, B12X dependencies, vLLM, PyTorch,
-Ray, FlashInfer, Triton, and checkpoint artifacts are not relicensed by this
-repository; consult their upstream licenses. No checkpoint weights or compiled
-third-party artifacts are included.
+The Build A Triton kernel and original O14 recipe/documentation are distributed
+under Apache License 2.0.
+
+Documented integration and donor lineages include:
+
+- the vLLM project and contributors;
+- B12X/local-inference-lab and Luke Alonso for sparse MLA, indexer, and int64
+  repair work;
+- Aiden Le, Luke Alonso, Martin Vit, and CosmicRaisins for adaptive MTP work;
+- penguinchang, ciprianveg, and OsakaTX for decode-aware prefill work;
+- tonyd2wild, danielwoz, drowzeys, B12X/local-inference-lab, jasl, and relevant
+  vLLM contributors for compact NVFP4 MLA KV lineage;
+- CosmicRaisins for the quantized-draft packed-module mapping lineage; and
+- 0xdfi/Don and Nous Research contributors for O14-original implementation,
+  packaging, and documented vLLM 0.27 integration/reconciliation work.
+
+These acknowledgments record provenance; they do not assign copyright
+ownership or represent third-party work as original Nous Research work.
+NVIDIA, DGX, CUDA, and related names are trademarks of their respective
+owners. GLM model weights, B12X dependencies, vLLM, PyTorch, Ray, FlashInfer,
+Triton, donor source, and checkpoint artifacts retain their own licenses and
+are not relicensed by this repository. Consult each upstream project before
+reuse. No checkpoint weights or compiled third-party artifacts are included.

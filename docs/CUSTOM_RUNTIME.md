@@ -4,7 +4,7 @@
 
 The live package reports `vllm 0.27.2.dev0+g6e448d0ea.d20260812`. It was rebuilt from the vLLM 0.27.1 line at source revision `6e448d0ea`, then received a campaign-documented 26-file port from the previous GLM-5.2 runtime.
 
-The port was not a blind file copy. The initial map classified 23 payload files as five copy/new-file cases, eight re-anchored diffs, and ten rewrites against changed 0.27 APIs; a final lane handled five additional load-bearing surfaces, with overlap between inventories. The final release chart uses “26-file custom port” as the consolidated shipped count.
+The port was not a blind file copy. The initial map classified 23 payload files as five copy/new-file cases, eight re-anchored diffs, and ten rewrites against changed 0.27 APIs; a final lane handled five additional load-bearing surfaces, with overlap between inventories. The campaign's consolidated release count is 26 files. A separate audit counted 27 Python files under a different scope. Neither count is a reproducible public patch manifest, and the scope reconciliation is unpublished.
 
 ## Functional surfaces
 

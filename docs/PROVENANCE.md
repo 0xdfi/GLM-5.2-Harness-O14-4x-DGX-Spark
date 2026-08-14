@@ -5,6 +5,7 @@
 - Campaign repository HEAD at packaging: `698b9085c3aed47de5513a720204ed788b607f6a`.
 - Final live-battery commit: `c3e3f4cdfb7a8d4f56a4f66380900ff48c30a35d`, co-authored `Claude Fable 5 <noreply@anthropic.com>`.
 - Exact final-battery values were recovered from raw tool-result events in the final Fable session transcript and sanitized into `evidence/final-o14-battery.jsonl`.
+- This is the complete public Fable attribution boundary: the repository does not evidence Fable assistance with CosmicRaisins' donor patch or donor lineage.
 - Live runtime identity, environment, source imports, four-rank source hashes, and exact-rescore first-fire records were inspected read-only immediately before publication.
 
 ## Evidence classes
