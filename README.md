@@ -1,6 +1,8 @@
 # GLM-5.2 Harness O14 on 4× DGX Spark
 
 > **Optimization target:** O14 is a production profile for up to four concurrent streams doing varied agent work, including natural prose. The objective is the highest sustained average decode speed across that mixed workload while preserving 399K context and exact output behavior. O14 is not tuned to win a single-stream peak test on one predictable prompt.
+>
+> **Benchmark shape:** The reported prose battery includes two C1 runs and two C4 runs with cache-busted prompts and a 1,024-output-token cap per stream. C4 is aggregate decode across four simultaneous requests. The peak probes generated 900 tokens at C1 and 3,515 total at C4. The cold-prefill gate used a 187,022-token prompt. Throughput was calculated from request usage and vLLM server counters over the measured wall window. See the [full protocol and raw values](docs/BENCHMARKS.md).
 
 Public reconstruction pack for the O14 configuration measured and left serving on a four-node DGX Spark/GB10 cluster on 2026-08-13.
 
