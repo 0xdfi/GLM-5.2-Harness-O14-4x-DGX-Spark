@@ -1,5 +1,7 @@
 # GLM-5.2 Harness O14 on 4× DGX Spark
 
+> **Optimization target:** O14 is a production profile for up to four concurrent streams doing varied agent work, including natural prose. The objective is the highest sustained average decode speed across that mixed workload while preserving 399K context and exact output behavior. O14 is not tuned to win a single-stream peak test on one predictable prompt.
+
 Public reconstruction pack for the O14 configuration measured and left serving on a four-node DGX Spark/GB10 cluster on 2026-08-13.
 
 O14 is a TP4, 399K-context GLM-5.2 serving stack built on the vLLM 0.27 line with a 26-file custom runtime port, sparse MLA, compact NVFP4 KV, adaptive MTP, full CUDA graphs, a custom Triton MLA BMM, an exact-rescore W8 head path, and an env-gated Marlin MoE change.
