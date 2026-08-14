@@ -85,7 +85,7 @@ class O14EvidenceTest(unittest.TestCase):
             "dynamic speculative decoding nevertheless remained disabled under DP",
             "93e2ab71119ff08805adc93be75196450382b088",
             "actual DP>1 multi-rank evidence",
-            "graph-utils/warmup/model-runner implementation is **not published**",
+            "source is public",
         ):
             self.assertIn(token, full_cg_text)
 
@@ -95,7 +95,7 @@ class O14EvidenceTest(unittest.TestCase):
             "**Compact NVFP4 MLA KV (`nvfp4_ds_mla`)**",
             "**Quantized MTP packed-module loading**",
         ):
-            self.assertIn("not published", rows[feature][2].lower())
+            self.assertIn("../reproducibility/", rows[feature][2])
 
         normalized_text = " ".join(text.split())
         for token in (
@@ -144,10 +144,10 @@ class O14EvidenceTest(unittest.TestCase):
         self.assertNotIn("assisted that donor/campaign lineage", text)
         for path in ("docs/PORT_LINEAGE.md", "docs/CUSTOM_RUNTIME.md"):
             count_text = (ROOT / path).read_text()
-            self.assertIn("consolidated release count", count_text)
-            self.assertIn("27 Python files", count_text)
-            self.assertIn("different scope", count_text)
-            self.assertIn("scope reconciliation is unpublished", count_text)
+            self.assertIn("74 vLLM files", count_text)
+            self.assertIn("3 modified B12X files", count_text)
+            self.assertIn("14 native", count_text)
+            self.assertNotIn("scope reconciliation is unpublished", count_text)
 
         provenance = (ROOT / "docs/PROVENANCE.md").read_text()
         self.assertIn("co-authored `Claude Fable 5", provenance)

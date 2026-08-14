@@ -2,9 +2,11 @@
 
 ## Version lineage
 
-The live package reports `vllm 0.27.2.dev0+g6e448d0ea.d20260812`. It was rebuilt from the vLLM 0.27.1 line at source revision `6e448d0ea`, then received a campaign-documented 26-file port from the previous GLM-5.2 runtime.
+The live package reports `vllm 0.27.2.dev0+g6e448d0ea.d20260812`. Its runtime Python/source line is reconstructed from public vLLM 0.27.1 commit `6e448d0ea9bf3d88d898b65449ca6dc2aec170ac` plus the exact checked-in 74-file overlay.
 
-The port was not a blind file copy. The initial map classified 23 payload files as five copy/new-file cases, eight re-anchored diffs, and ten rewrites against changed 0.27 APIs; a final lane handled five additional load-bearing surfaces, with overlap between inventories. The campaign's consolidated release count is 26 files. A separate audit counted 27 Python files under a different scope. Neither count is a reproducible public patch manifest, and the scope reconciliation is unpublished.
+The port was not a blind file copy. The initial campaign map classified 23 payload files as five copy/new-file cases, eight re-anchored diffs, and ten rewrites against changed 0.27 APIs; a final lane handled five additional load-bearing surfaces, with overlap between inventories. The campaign's 26-file release count and a separate 27-Python-file audit were historical, incomparable scopes. The exact public manifest supersedes both: **74 vLLM files (67 modified + 7 added), 3 modified B12X files over a public base matching the other 123 installed files, and 14 native source/build paths**.
+
+The native writer/build line is independently pinned to public vLLM commit `e232d262369b8c918cf478a7a96a0fcf8127cf65`. It overlaps the runtime overlay on seven paths and is kept as a separately hashed patch instead of being presented as one clean Git queue.
 
 ## Functional surfaces
 
@@ -61,6 +63,8 @@ Default is off. O14 runs it on. `patches/apply_o14_overlays.py` reproduces the s
 - Humming and TensorRT-LLM MoE paths rejected the group-128 compressed-tensors layout.
 - `eh_proj` INT8 could not load under the existing quantization ignore-list/layout and offered an estimated prize of only about 0.3%.
 
-## Why this is not advertised as stock-vLLM reproducible
+## Public reconstruction and build boundary
 
-The O14 Docker layer starts from an already ported R17 base. The private base image and checkpoint are not distributable here. The included Dockerfile requires `BASE_IMAGE` and reproduces the exact O14 top layer. Anyone rebuilding from stock vLLM must independently port the documented functional surfaces and pass correctness, graph, long-context, and distributed gates.
+`reproducibility/verify.py` fail-closes the complete checked-in source surfaces: 74 vLLM targets, 3 B12X targets, and 14 native-build targets. `docker/Dockerfile.repro` is the public ARM64 assembly recipe and leaves a clean image build explicitly unproven. The legacy `Dockerfile.o14-overlay` remains a convenience view of the six previously published top-layer files.
+
+No native wheel or container image was built while preparing this pack. A future build must reconcile the separate runtime/native vLLM lines, resolve dependencies, prove package-owned native operators, and pass numerical, graph, long-context, and distributed gates. Exact benchmark replication additionally requires the same private checkpoint and W8 sidecar plus the same four-node hardware/topology.

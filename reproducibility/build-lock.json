@@ -1,0 +1,90 @@
+{
+  "schema": "o14-public-build-lock/1",
+  "platform": {
+    "os": "linux",
+    "architecture": "arm64",
+    "gpu_architecture": "sm_121a",
+    "cuda_base": {
+      "reference": "nvidia/cuda:13.0.2-devel-ubuntu24.04",
+      "manifest_list_digest": "sha256:5dc1bca23d05bd37b011be68ec470c03b403a5da07ec3a86e41af9470e9d0cc6",
+      "arm64_digest": "sha256:450d11555d20ac8ebbbc13ebf17589c2bd42869171a90179ce7098b4a5e64c6a"
+    }
+  },
+  "vllm_runtime_source": {
+    "repository": "https://github.com/vllm-project/vllm.git",
+    "tag": "v0.27.1",
+    "commit": "6e448d0ea9bf3d88d898b65449ca6dc2aec170ac",
+    "overlay_manifest": "o14-stage0-wheel-source-selection/manifest.json",
+    "base_wheel_sha256": "02dba246bc7e9e4b189ce1cb43b25792176ca4389352d31ebecd5b27651e16bb",
+    "modified_files": 67,
+    "added_files": 7
+  },
+  "b12x": {
+    "repository": "https://github.com/lukealonso/b12x.git",
+    "commit": "334a2d75d166becea0aa640b402d521ea0a290eb",
+    "tree": "4936c7767f26967be28f1394fc5aa1d03171b34a",
+    "version": "0.30.2",
+    "matching_live_files": 123,
+    "overlay_manifest": "o14-b12x-git-source-selection/manifest.json",
+    "modified_files": 3
+  },
+  "native_nvfp4_cache_op": {
+    "repository": "https://github.com/vllm-project/vllm.git",
+    "base_commit": "e232d262369b8c918cf478a7a96a0fcf8127cf65",
+    "patch_manifest": "o14-native-source-selection/manifest.json",
+    "patch_sha256": "55344cbfd51765ba1ad77f4bf4c12724617c123e5d0c8d32f795b6203b5c30dc",
+    "source_manifest_sha256": "1a1840d859e8abd3f9a27448411a7b9da70c6c49d0fb69562f1983cb259bdb84",
+    "expected_native_member": "vllm/_C_stable_libtorch.abi3.so",
+    "expected_native_sha256": "be9feccb01c0532d849fa30aab6a0edc809773be22ba8bb4a734040a9e4f95b8"
+  },
+  "flashinfer_compatibility_patch": {
+    "version": "0.6.15",
+    "python_wheel_url": "https://files.pythonhosted.org/packages/66/a6/d3a1bf32b97f6c2c32aedb0b49fcd45259d9fb8d1131e86327b5672dd1b0/flashinfer_python-0.6.15-py3-none-any.whl",
+    "python_wheel_sha256": "da6c339e14db4831ade0d593324f02907d44bd4b86b640faad4727d9e089477b",
+    "cubin_wheel_url": "https://github.com/flashinfer-ai/flashinfer/releases/download/v0.6.15/flashinfer_cubin-0.6.15-py3-none-any.whl",
+    "cubin_wheel_sha256": "3870958b02a1752b44121d6842c531e1be2a29202f623a5fd5f08efe3eb70186",
+    "jit_cache_wheel_url": "https://github.com/flashinfer-ai/flashinfer/releases/download/v0.6.15/flashinfer_jit_cache-0.6.15+cu130-cp39-abi3-manylinux_2_28_aarch64.whl",
+    "jit_cache_wheel_sha256": "39e4f52378a34107ee277907bdec8bf8528c13a84143de8469d6da42ad937db3",
+    "target_member": "flashinfer/autotuner/__init__.py",
+    "preimage_sha256": "0bc4ed866a3f679bb756bec21f2cb36c042ad35f9380a2239ff9717e808da2fc",
+    "result_sha256": "f1138881c26138cf7d1ace1e0c054c095657b411369e5e37c0c1ff019e1e6fa0",
+    "applicator": "runtime/r17_shim.py",
+    "required_symbol": "set_autotune_process_group"
+  },
+  "python_packages": {
+    "apache-tvm-ffi": "0.1.9",
+    "b12x": "0.30.2",
+    "compressed-tensors": "0.17.0",
+    "cuda-bindings": "13.3.1",
+    "cuda-pathfinder": "1.5.6",
+    "cuda-python": "13.3.1",
+    "fastsafetensors": "0.3.3",
+    "flashinfer-python": "0.6.15",
+    "nvidia-cutlass-dsl": "4.5.2",
+    "nvidia-cutlass-dsl-libs-base": "4.5.2",
+    "nvidia-cutlass-dsl-libs-cu13": "4.5.2",
+    "nvidia-nccl-cu13": "2.28.9",
+    "ray": "2.56.0",
+    "safetensors": "0.8.0",
+    "tokenizers": "0.22.2",
+    "torch": "2.11.0+cu130",
+    "torchaudio": "2.11.0+cu130",
+    "torchvision": "0.26.0+cu130",
+    "transformers": "5.13.0",
+    "triton": "3.6.0",
+    "vllm": "0.27.2.dev0+g6e448d0ea.d20260812"
+  },
+  "observed_runtime": {
+    "image_config_id": "sha256:d79f7410c475782bc00ee970c39a357e74206106ef247e57aea19607d7ebcb67",
+    "four_rank_source_manifest_file_count": 77,
+    "four_rank_source_parity": true,
+    "postlaunch_python_source_drift": false
+  },
+  "checkpoint_boundary": {
+    "public_base": "QuantTrio/GLM-5.2-Int4-Int8Mix",
+    "exact_o14_checkpoint": "glm52-dfi-hybrid-corrected-v4-lmheadw8v2",
+    "exact_checkpoint_published": false,
+    "required_sidecar": "lmhead_w8v2_sidecar.safetensors",
+    "exact_benchmark_replication_requires_checkpoint_and_sidecar": true
+  }
+}

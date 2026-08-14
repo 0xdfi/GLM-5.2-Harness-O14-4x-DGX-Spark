@@ -1,0 +1,74 @@
+# syntax=docker/dockerfile:1.7
+# SPDX-License-Identifier: Apache-2.0
+# Complete public O14 runtime assembly recipe. Model weights remain external.
+ARG CUDA_BASE=docker.io/nvidia/cuda@sha256:450d11555d20ac8ebbbc13ebf17589c2bd42869171a90179ce7098b4a5e64c6a
+FROM ${CUDA_BASE}
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PIP_BREAK_SYSTEM_PACKAGES=1 \
+    TORCH_CUDA_ARCH_LIST=12.1a \
+    FLASHINFER_CUDA_ARCH_LIST=12.1a \
+    VLLM_DIST_PACKAGES=/usr/local/lib/python3.12/dist-packages \
+    PYTHONUNBUFFERED=1
+
+# Exact Ubuntu package revisions are inherited from the digest-pinned CUDA base.
+# hadolint ignore=DL3008
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends python3 python3-pip python3-dev git curl ca-certificates libibverbs1 libibverbs-dev rdma-core libxcb1; \
+    rm -rf /var/lib/apt/lists/*
+
+COPY reproducibility/observed-runtime-requirements.txt /opt/o14/observed-runtime-requirements.txt
+RUN python3 -m pip install --no-cache-dir \
+      --extra-index-url https://download.pytorch.org/whl/cu130 \
+      -r /opt/o14/observed-runtime-requirements.txt
+
+ARG O14_RELEASE=https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark/releases/download/o14-runtime-inputs-v1
+# Remote ADD is deliberate: BuildKit verifies each immutable release asset hash.
+# hadolint ignore=DL3020
+ADD --checksum=sha256:02dba246bc7e9e4b189ce1cb43b25792176ca4389352d31ebecd5b27651e16bb \
+    ${O14_RELEASE}/vllm-0.27.2.dev0+g6e448d0ea.d20260812-cp312-cp312-linux_aarch64.whl /tmp/vllm-stage0.whl
+RUN python3 -m pip install --no-cache-dir --no-deps --force-reinstall /tmp/vllm-stage0.whl && rm /tmp/vllm-stage0.whl
+
+RUN git clone https://github.com/lukealonso/b12x.git /opt/b12x-src && \
+    git -C /opt/b12x-src checkout --detach 334a2d75d166becea0aa640b402d521ea0a290eb && \
+    test "$(git -C /opt/b12x-src rev-parse HEAD)" = 334a2d75d166becea0aa640b402d521ea0a290eb && \
+    python3 -m pip install --no-cache-dir --no-deps --force-reinstall /opt/b12x-src
+
+# hadolint ignore=DL3020
+ADD --checksum=sha256:3870958b02a1752b44121d6842c531e1be2a29202f623a5fd5f08efe3eb70186 \
+    https://github.com/flashinfer-ai/flashinfer/releases/download/v0.6.15/flashinfer_cubin-0.6.15-py3-none-any.whl /tmp/flashinfer-cubin.whl
+# hadolint ignore=DL3020
+ADD --checksum=sha256:39e4f52378a34107ee277907bdec8bf8528c13a84143de8469d6da42ad937db3 \
+    https://github.com/flashinfer-ai/flashinfer/releases/download/v0.6.15/flashinfer_jit_cache-0.6.15+cu130-cp39-abi3-manylinux_2_28_aarch64.whl /tmp/flashinfer-jit-cache.whl
+# hadolint ignore=DL3020
+ADD --checksum=sha256:da6c339e14db4831ade0d593324f02907d44bd4b86b640faad4727d9e089477b \
+    https://files.pythonhosted.org/packages/66/a6/d3a1bf32b97f6c2c32aedb0b49fcd45259d9fb8d1131e86327b5672dd1b0/flashinfer_python-0.6.15-py3-none-any.whl /tmp/flashinfer-python.whl
+RUN python3 -m pip install --no-cache-dir --no-deps --force-reinstall \
+      /tmp/flashinfer-cubin.whl /tmp/flashinfer-jit-cache.whl /tmp/flashinfer-python.whl && \
+    rm /tmp/flashinfer-*.whl
+
+COPY reproducibility/overlays/vllm/vllm /opt/o14/vllm-overlay
+COPY reproducibility/overlays/b12x/b12x /opt/o14/b12x-overlay
+RUN set -eux; \
+    vllm_dir="$(python3 -c 'import importlib.metadata as m; print(m.distribution("vllm").locate_file("vllm"))')"; \
+    b12x_dir="$(python3 -c 'import importlib.metadata as m; print(m.distribution("b12x").locate_file("b12x"))')"; \
+    cp -a /opt/o14/vllm-overlay/. "${vllm_dir}/"; \
+    cp -a /opt/o14/b12x-overlay/. "${b12x_dir}/"
+
+# hadolint ignore=DL3020
+ADD --checksum=sha256:b8ed2f89a59c810be5a6b13c54ab2ebb956770837119cef762a46e0607fc6941 \
+    ${O14_RELEASE}/vllm-0.1.dev17863+ge232d2623.exp1sm121a368r4dtypefix-cp312-cp312-linux_aarch64.whl /tmp/vllm-native.whl
+RUN python3 -c 'import hashlib,pathlib,zipfile; w=zipfile.ZipFile("/tmp/vllm-native.whl"); d=w.read("vllm/_C_stable_libtorch.abi3.so"); assert hashlib.sha256(d).hexdigest()=="be9feccb01c0532d849fa30aab6a0edc809773be22ba8bb4a734040a9e4f95b8"; p=pathlib.Path("/opt/vllm-extra/nvfp4_ds_mla/_C_stable_libtorch.abi3.so"); p.parent.mkdir(parents=True,exist_ok=True); p.write_bytes(d)' && \
+    rm /tmp/vllm-native.whl
+
+COPY runtime/r17_shim.py /opt/o14/r17_shim.py
+RUN python3 /opt/o14/r17_shim.py
+
+COPY . /opt/o14/repo
+RUN PYTHONDONTWRITEBYTECODE=1 python3 /opt/o14/repo/reproducibility/verify.py && \
+    python3 -m compileall -q /usr/local/lib/python3.12/dist-packages/vllm /usr/local/lib/python3.12/dist-packages/b12x && \
+    python3 -c 'import hashlib,pathlib; p=pathlib.Path("/opt/vllm-extra/nvfp4_ds_mla/_C_stable_libtorch.abi3.so"); assert hashlib.sha256(p.read_bytes()).hexdigest()=="be9feccb01c0532d849fa30aab6a0edc809773be22ba8bb4a734040a9e4f95b8"'
+
+ENTRYPOINT ["/opt/o14/repo/recipe/serve-o14.sh"]
+CMD ["render"]

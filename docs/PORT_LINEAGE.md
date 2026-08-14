@@ -23,7 +23,7 @@ A final port lane handled additional load-bearing surfaces:
 - `kv_cache_interface.py`: NVFP4 quant-mode recognition and 368-byte/token page accounting;
 - DFlash speculator signature compatibility.
 
-The campaign's consolidated release count is **26 files**. A separate audit counted **27 Python files** under a different scope. Neither count is a reproducible public patch manifest, and the scope reconciliation is unpublished.
+The campaign's consolidated **26-file** release count and a separate **27-Python-file** audit were historical, overlapping scopes and cannot be compared directly. The exact public inventory supersedes those labels: **74 vLLM files (67 modified + 7 added), 3 modified B12X files over a public base matching the other 123 installed files, and 14 native source/build paths**. Every target has a base and target hash in a fail-closed manifest.
 
 ## Custom runtime work that reached O14
 
@@ -60,6 +60,8 @@ The runtime uses probabilistic drafting, adaptive depths 2/4/5, a 32-step contro
 - `eh_proj` INT8 was not loadable with the existing ignore-list/layout and was removed.
 - The trace showed NCCL around 10.6 ms/step, invalidating an earlier theory that communication alone explained fixed decode cost.
 
-## Reproduction boundary
+## Public reconstruction boundary
 
-The complete pre-O14 ported base and private checkpoint are not in this repository. `docker/Dockerfile.o14-overlay` reproduces the final O14 source layer only. A stock-vLLM rebuild must reimplement and requalify the port surfaces above; copying this overlay onto unmodified upstream vLLM is insufficient.
+The complete known O14 runtime source surfaces are now in `reproducibility/`. The runtime overlay is bound to the exact R17 stage-0 wheel from public vLLM commit `6e448d0e`; the B12X overlay is bound to public commit `334a2d75`; and the native patch is bound to public vLLM commit `e232d262`. The two vLLM lines overlap on seven paths and remain separate.
+
+`docker/Dockerfile.repro` is the complete pinned assembly recipe, not a build receipt. The checkpoint, W8 sidecar, four-node topology, and runtime qualification required to replicate the benchmark remain outside the public source pack.

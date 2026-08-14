@@ -4,6 +4,11 @@ Copyright 2026 0xdfi and contributors.
 This distribution includes modified source files from the vLLM project,
 licensed under Apache License 2.0 and retaining their SPDX attribution.
 
+This distribution also includes modified Python source derived from the public
+Apache-2.0 `b12x` 0.30.2 wheel. The exact public wheel URL and SHA-256 are
+recorded in `reproducibility/build-lock.json`; B12X and its contributors
+retain their applicable copyrights and attribution.
+
 The Build A Triton kernel and original O14 recipe/documentation are distributed
 under Apache License 2.0.
 
@@ -26,4 +31,5 @@ NVIDIA, DGX, CUDA, and related names are trademarks of their respective
 owners. GLM model weights, B12X dependencies, vLLM, PyTorch, Ray, FlashInfer,
 Triton, donor source, and checkpoint artifacts retain their own licenses and
 are not relicensed by this repository. Consult each upstream project before
-reuse. No checkpoint weights or compiled third-party artifacts are included.
+reuse. No checkpoint/sidecar weights, compiled wheels, native objects, or
+container images are included.

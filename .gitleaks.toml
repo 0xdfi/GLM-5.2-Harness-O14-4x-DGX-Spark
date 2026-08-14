@@ -1,0 +1,10 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Exact O14 source line: topk_tokens is a tensor, not a credential"
+condition = "AND"
+rules = ["generic-api-key"]
+regexTarget = "line"
+paths = ['''^reproducibility/overlays/vllm/vllm/model_executor/layers/sparse_attn_indexer\.py$''']
+regexes = ['''^\s*gathered, topk_tokens, out=topk_indices\s*$''']

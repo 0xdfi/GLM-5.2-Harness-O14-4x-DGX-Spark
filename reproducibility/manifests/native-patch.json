@@ -1,0 +1,109 @@
+{
+  "file_count": 14,
+  "files": [
+    {
+      "base_sha256": "a305eff6ff2f84ab328c43d3c7c17fbac5e788a5f7c1019f44f042a23b0d5d3c",
+      "classification": "modified",
+      "path": "CMakeLists.txt",
+      "target_bytes": 61099,
+      "target_sha256": "fa01c67cad8a276aab7b6766dd651ab04eefcfa42637c0295137b5e3adc562f2"
+    },
+    {
+      "base_sha256": "e65de9598f63d20100d14c4b365b6d4acb97015cb50c4fd265a1d51fe109f811",
+      "classification": "modified",
+      "path": "csrc/libtorch_stable/cache_kernels.cu",
+      "target_bytes": 81411,
+      "target_sha256": "190a6c07f7758571e392e6ea7619b63a458e4f66118e24830c5bf45bbdad2605"
+    },
+    {
+      "base_sha256": "2cce397942380b5765858b3b488d9369bc23521699ef419ce3d27e92bdf690d3",
+      "classification": "modified",
+      "path": "csrc/libtorch_stable/ops.h",
+      "target_bytes": 29673,
+      "target_sha256": "029b28990e309bb8a956b66a1df223e51328d7f9f853b4d859f660e932d1d4ad"
+    },
+    {
+      "base_sha256": "4ce02f14e27ed00849d21cbe763513bdcac961655f9c210768d9dced6facad4c",
+      "classification": "modified",
+      "path": "csrc/libtorch_stable/torch_bindings.cpp",
+      "target_bytes": 39476,
+      "target_sha256": "db08c449f8e9cc3b00c3e03eb1ff210fa1f76c69f06a2cb8206b45edfcdda180"
+    },
+    {
+      "base_sha256": "cbc7fec3a616e318870a2f117ed73cc17b779ef00460320df11e8a5a4dd8a5c8",
+      "classification": "modified",
+      "path": "vllm/_custom_ops.py",
+      "target_bytes": 114874,
+      "target_sha256": "bda326b13293fcc9ee6f4df74825692da732504a2e7572fa0d6ca3977e89c614"
+    },
+    {
+      "base_sha256": "0c71c5c04d8e87e88377cb8b4c2966d956be2744afef72acdbd5458a9322d5a2",
+      "classification": "modified",
+      "path": "vllm/config/cache.py",
+      "target_bytes": 13669,
+      "target_sha256": "28f50f3621c5b50e0a810cdb13f878345d2a49cd6f989d4b36a26740f247662c"
+    },
+    {
+      "base_sha256": "b71313296d2a1b057d3454aff535d90ff2fa3626e1546ee64905a70e489c745c",
+      "classification": "modified",
+      "path": "vllm/model_executor/layers/attention/mla_attention.py",
+      "target_bytes": 100575,
+      "target_sha256": "f9e8c87cb2bf4d39aa8c65ebe3e6e5937f12179cd408d3c807b3ca4ac829e63b"
+    },
+    {
+      "base_sha256": "5832d5a379a2385c9a7a324d33055527f4d16503c31dae77ede0eb79669fad11",
+      "classification": "modified",
+      "path": "vllm/model_executor/models/deepseek_mtp.py",
+      "target_bytes": 36082,
+      "target_sha256": "871e32d4bd28929a5688a254f641363f140945c04b25915a0fe04ea81e011f09"
+    },
+    {
+      "base_sha256": "004dc095d77dcd5026b16ba827724162a252db0f260cd025ba2df6fddb1f04ea",
+      "classification": "modified",
+      "path": "vllm/utils/torch_utils.py",
+      "target_bytes": 33385,
+      "target_sha256": "2ad1dec7d7e1e6d64d87428eb0e7e7cebfb33d8b6915781676d061ce1fa772eb"
+    },
+    {
+      "base_sha256": "f9e76ba92bee75c2a3007efe3059cf53a2afa72cd9ff5fef54f78687f3ee8858",
+      "classification": "modified",
+      "path": "vllm/v1/attention/backends/mla/b12x_mla_sparse.py",
+      "target_bytes": 42143,
+      "target_sha256": "d3cab6ae58006039247b70ca87e650c80dcbfede6a59e7469b8e09a497d0bd70"
+    },
+    {
+      "base_sha256": "0eb3a7642a8d9301378af351a5d6461c070e1ec2c6c23e821a490df81d2f0729",
+      "classification": "modified",
+      "path": "vllm/v1/kv_cache_interface.py",
+      "target_bytes": 37077,
+      "target_sha256": "653714411e448a9e67f27d0a2c8b067d9080175a12914e44fc3e330fc93f9634"
+    },
+    {
+      "base_sha256": null,
+      "classification": "added",
+      "path": "tests/model_executor/test_mtp_quantization.py",
+      "target_bytes": 4548,
+      "target_sha256": "f3e6fa48da2f09caabbd8a19fb1945ffcccaaa43a4a8443dbfcd6d3670dfb81a"
+    },
+    {
+      "base_sha256": null,
+      "classification": "added",
+      "path": "tests/v1/attention/pr82_b12x_368_reference.py",
+      "target_bytes": 6528,
+      "target_sha256": "6920f8537a87bbe0b919738b2ca12beef5b541431596629fb94bec67b6b91810"
+    },
+    {
+      "base_sha256": null,
+      "classification": "added",
+      "path": "tests/v1/attention/test_pr82_b12x_368_contract.py",
+      "target_bytes": 9404,
+      "target_sha256": "7e828ba0a1c2ea4ae1ab83fdc2c2e80df8db0f4cd6088d382eaa9ba1ce5d3db1"
+    }
+  ],
+  "patch": "exp1-r4-native.patch",
+  "patch_sha256": "55344cbfd51765ba1ad77f4bf4c12724617c123e5d0c8d32f795b6203b5c30dc",
+  "schema": "o14-native-nvfp4-source-patch/1",
+  "target_source_manifest_sha256": "1a1840d859e8abd3f9a27448411a7b9da70c6c49d0fb69562f1983cb259bdb84",
+  "upstream_commit": "e232d262369b8c918cf478a7a96a0fcf8127cf65",
+  "upstream_repository": "https://github.com/vllm-project/vllm.git"
+}

@@ -166,7 +166,7 @@ for token in (
     "dynamic speculative decoding nevertheless remained disabled under DP",
     "93e2ab71119ff08805adc93be75196450382b088",
     "actual DP>1 multi-rank evidence",
-    "graph-utils/warmup/model-runner implementation is **not published**",
+    "source is public",
 ):
     assert token in full_cg, token
 
@@ -176,6 +176,6 @@ for feature in (
     "**Compact NVFP4 MLA KV (`nvfp4_ds_mla`)**",
     "**Quantized MTP packed-module loading**",
 ):
-    assert "not published" in catalogue[feature][2].lower(), feature
+    assert "../reproducibility/" in catalogue[feature][2], feature
 
 print("VALIDATION_OK")

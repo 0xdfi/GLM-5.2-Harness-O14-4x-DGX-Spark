@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
-# Public O14 reconstruction layer. BASE_IMAGE must already contain the documented
-# vLLM 0.27 custom-port base; this is not compatible with unmodified upstream.
+# Legacy six-file O14 convenience layer. This is not the source-complete route.
+# Build/qualify a compatible base using docker/Dockerfile.repro and the
+# 74/3/14 source pack as inputs; this layer alone makes no runtime-build claim.
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
@@ -31,7 +32,8 @@ RUN set -eu; \
     grep -q R17_DRAFT_TEMP_SCALE ${VLLM_SITE}/vllm/v1/worker/gpu/spec_decode/speculator.py; \
     grep -q 'FIRST RESCORE FIRED' ${VLLM_SITE}/vllm/model_executor/layers/logits_processor.py
 
-LABEL org.opencontainers.image.title="GLM-5.2 Harness O14 overlay" \
-      org.opencontainers.image.description="O14 source overlays for the vLLM 0.27 custom runtime" \
+LABEL org.opencontainers.image.title="GLM-5.2 Harness O14 legacy convenience overlay" \
+      org.opencontainers.image.description="Six-file view only; use the public source pack for complete reconstruction" \
       com.nous.r17.stage="o14" \
-      com.nous.r17.builda.active="v0"
+      com.nous.r17.builda.active="v0" \
+      com.nous.o14.source-complete="false"
