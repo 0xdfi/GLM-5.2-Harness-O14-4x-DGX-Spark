@@ -10,6 +10,7 @@ This directory closes the missing public runtime recipe.
 - **Hash-gated FlashInfer 0.6.15 compatibility patch** with exact preimage and result hashes.
 - **Observed runtime dependency snapshot**, immutable public input hashes, and the complete Docker assembly recipe at [`docker/Dockerfile.repro`](../docker/Dockerfile.repro).
 - **Exact serving command and environment** in [`recipe/serve-o14.sh`](../recipe/serve-o14.sh) and [`recipe/o14.env.example`](../recipe/o14.env.example).
+- **Safe operational envelope** for operator-supplied rank topology, container capabilities, persistent caches, and the measured driver/rank CUDA connection split in [`docs/OPERATIONAL_ENVELOPE.md`](../docs/OPERATIONAL_ENVELOPE.md).
 
 Run the static closure check:
 
