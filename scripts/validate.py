@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import pathlib
+import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REQUIRED = {
@@ -15,6 +16,7 @@ REQUIRED = {
     "recipe/o14.env.example",
     "recipe/serve-o14.sh",
     "recipe/README.md",
+    "docker/Dockerfile.repro",
     "docker/Dockerfile.o14-overlay",
     "kernels/builda_bmm_v0.py",
     "kernels/builda_bmm_v1.py",
@@ -30,6 +32,7 @@ REQUIRED = {
     "benchmarks/deep_prefill_probe.py",
     "docs/BENCHMARKS.md",
     "docs/CUSTOM_RUNTIME.md",
+    "docs/OPERATIONAL_ENVELOPE.md",
     "docs/PORT_LINEAGE.md",
     "docs/PROVENANCE.md",
     "docs/VLLM_UPSTREAMING.md",
@@ -100,6 +103,8 @@ serve = (ROOT / "recipe/serve-o14.sh").read_text()
 env = (ROOT / "recipe/o14.env.example").read_text()
 mla = (ROOT / "overlays/mla_attention.py").read_text()
 dockerfile = (ROOT / "docker/Dockerfile.o14-overlay").read_text()
+dockerfile_repro = (ROOT / "docker/Dockerfile.repro").read_text()
+operational = (ROOT / "docs/OPERATIONAL_ENVELOPE.md").read_text()
 for token in ("O14_EXECUTE", "B12X_MLA_SPARSE", "nvfp4_ds_mla", "6,12,18,24"):
     assert token in serve, token
 assert "VLLM_BUILDA_BMM" in serve
@@ -114,6 +119,134 @@ for token in (
     "runtime/r17_shim.py",
 ):
     assert token in dockerfile, token
+
+runtime_defaults = {
+    "VLLM_USE_V2_MODEL_RUNNER": "1",
+    "VLLM_USE_FLASHINFER_SAMPLER": "1",
+    "VLLM_MARLIN_USE_ATOMIC_ADD": "1",
+    "VLLM_SPARSE_INDEXER_MAX_LOGITS_MB": "256",
+    "SAFETENSORS_FAST_GPU": "1",
+    "CUDA_DEVICE_ORDER": "PCI_BUS_ID",
+    "CUDA_MODULE_LOADING": "LAZY",
+    "CUTE_DSL_ARCH": "sm_121a",
+    "VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS": "1800",
+    "NCCL_CUMEM_ENABLE": "0",
+    "NCCL_MIN_NCHANNELS": "4",
+    "NCCL_MAX_NCHANNELS": "4",
+    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
+    "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
+    "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+}
+for name, value in runtime_defaults.items():
+    assert f'export {name}="${{{name}:-{value}}}"' in serve, name
+    assert re.search(rf"(?m)^{re.escape(name)}={re.escape(value)}$", env), name
+
+for token in (
+    "VLLM_BUILDA_BMM",
+    "VLLM_MOE_MARLIN_ATOMIC_ADD",
+    "VLLM_USE_B12X_SPARSE_INDEXER",
+    "KV_FP8_ROPE",
+    "--kv-cache-dtype nvfp4_ds_mla",
+    "--attention-backend B12X_MLA_SPARSE",
+    '"rejection_sample_method": "block"',
+    '--download-dir "${MODEL_PATH}" --load-format auto',
+):
+    assert token in serve, token
+
+index_topk_pattern = "FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS"
+assert len(index_topk_pattern) == 78
+hf_override = json.dumps(
+    {"use_index_cache": True, "index_topk_pattern": index_topk_pattern},
+    separators=(",", ":"),
+)
+assert f"--hf-overrides '{hf_override}'" in serve
+
+assert 'export CUDA_DEVICE_MAX_CONNECTIONS="${O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS:-32}"' in serve
+assert re.search(r"(?m)^CUDA_DEVICE_MAX_CONNECTIONS=4$", env)
+assert re.search(r"(?m)^O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS=32$", env)
+assert "`CUDA_DEVICE_MAX_CONNECTIONS=4`" in operational
+assert "`O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS`" in operational
+assert "default is `32`" in operational
+assert "source-inferred" in operational
+assert "does not include a direct per-worker process-environment capture" in operational
+
+for token in (
+    'o14_cache_root="${O14_JIT_CACHE_ROOT:-',
+    'export CUDA_CACHE_PATH="${CUDA_CACHE_PATH:-${o14_cache_root}/cuda}"',
+    'export XDG_CACHE_HOME="${XDG_CACHE_HOME:-${o14_cache_root}/xdg}"',
+    'export VLLM_CACHE_ROOT="${VLLM_CACHE_ROOT:-${o14_cache_root}/vllm}"',
+    'export B12X_CUTE_COMPILE_CACHE_DIR="${B12X_CUTE_COMPILE_CACHE_DIR:-${o14_cache_root}/b12x-cute}"',
+    'export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-${o14_cache_root}/triton}"',
+    'export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-${o14_cache_root}/torchinductor}"',
+    'export TORCH_EXTENSIONS_DIR="${TORCH_EXTENSIONS_DIR:-${o14_cache_root}/torch-extensions}"',
+):
+    assert token in serve, token
+assert re.search(r"(?m)^O14_JIT_CACHE_ROOT=/var/cache/o14$", env)
+for name, suffix in {
+    "CUDA_CACHE_PATH": "cuda",
+    "XDG_CACHE_HOME": "xdg",
+    "VLLM_CACHE_ROOT": "vllm",
+    "B12X_CUTE_COMPILE_CACHE_DIR": "b12x-cute",
+    "TRITON_CACHE_DIR": "triton",
+    "TORCHINDUCTOR_CACHE_DIR": "torchinductor",
+    "TORCH_EXTENSIONS_DIR": "torch-extensions",
+}.items():
+    assert re.search(
+        rf"(?m)^{re.escape(name)}=/var/cache/o14/{re.escape(suffix)}$",
+        env,
+    ), name
+
+for token in (
+    "TRITON_PTXAS_PATH=/usr/local/cuda/bin/ptxas",
+    "TORCH_CUDA_ARCH_LIST=12.1a",
+    "FLASHINFER_CUDA_ARCH_LIST=12.1a",
+):
+    assert token in dockerfile_repro, token
+
+for name in (
+    "R17_DRAFT_TEMP_SCALE",
+    "VLLM_NVFP4_GEMM_BACKEND",
+    "VLLM_NVFP4_ALLOW_SLOW_FALLBACK",
+    "VLLM_QUANTIZATION_DISABLE_FUSED_MOE",
+):
+    assert name not in serve, name
+    assert name not in env, name
+
+topology_variables = (
+    "RAY_ADDRESS",
+    "VLLM_HOST_IP",
+    "NCCL_SOCKET_IFNAME",
+    "GLOO_SOCKET_IFNAME",
+    "NCCL_IB_HCA",
+    "NCCL_IB_GID_INDEX",
+    "NCCL_IB_TC",
+    "UCX_NET_DEVICES",
+    "UCX_TLS",
+)
+for name in topology_variables:
+    assert f"`{name}`" in operational, name
+    assignment = rf"(?m)^\s*(?:export\s+)?{re.escape(name)}\s*="
+    assert re.search(assignment, operational) is None, name
+    assert re.search(assignment, serve) is None, name
+    assert re.search(assignment, env) is None, name
+for token in (
+    "GPU access",
+    "host networking and host IPC",
+    "16 GiB of shared memory",
+    "unlimited memlock",
+    "operator-selected RDMA device mappings",
+    "writable persistent cache mount",
+    "rather than a socket fallback",
+):
+    assert token in operational, token
+assert re.search(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b", operational) is None
+assert re.search(r"/(?:Users|home)/", operational) is None
+for relative, link in {
+    "recipe/README.md": "../docs/OPERATIONAL_ENVELOPE.md",
+    "docs/PUBLIC_BUILD.md": "OPERATIONAL_ENVELOPE.md",
+    "reproducibility/README.md": "../docs/OPERATIONAL_ENVELOPE.md",
+}.items():
+    assert link in (ROOT / relative).read_text(), relative
 
 readme = (ROOT / "README.md").read_text()
 for token in (

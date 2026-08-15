@@ -8,6 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_BREAK_SYSTEM_PACKAGES=1 \
     TORCH_CUDA_ARCH_LIST=12.1a \
     FLASHINFER_CUDA_ARCH_LIST=12.1a \
+    TRITON_PTXAS_PATH=/usr/local/cuda/bin/ptxas \
     VLLM_DIST_PACKAGES=/usr/local/lib/python3.12/dist-packages \
     PYTHONUNBUFFERED=1
 

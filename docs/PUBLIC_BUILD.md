@@ -2,6 +2,8 @@
 
 The repository now includes the full O14 runtime assembly path in [`docker/Dockerfile.repro`](../docker/Dockerfile.repro).
 
+The separate [`OPERATIONAL_ENVELOPE.md`](OPERATIONAL_ENVELOPE.md) defines the operator-supplied rank topology, container capabilities, persistent caches, and driver/rank CUDA connection split needed around that image.
+
 It pins and assembles:
 
 - public ARM64 CUDA 13.0.2 base digest;

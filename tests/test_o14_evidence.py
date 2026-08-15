@@ -5,14 +5,191 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import re
+import shlex
 import subprocess
 import tempfile
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+INDEX_TOPK_PATTERN = "FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS"
+TOPOLOGY_VARIABLES = (
+    "RAY_ADDRESS",
+    "VLLM_HOST_IP",
+    "NCCL_SOCKET_IFNAME",
+    "GLOO_SOCKET_IFNAME",
+    "NCCL_IB_HCA",
+    "NCCL_IB_GID_INDEX",
+    "NCCL_IB_TC",
+    "UCX_NET_DEVICES",
+    "UCX_TLS",
+)
 
 
 class O14EvidenceTest(unittest.TestCase):
+    def test_operational_performance_envelope(self) -> None:
+        script = ROOT / "recipe/serve-o14.sh"
+        serve = script.read_text()
+        env_example = (ROOT / "recipe/o14.env.example").read_text()
+        dockerfile = (ROOT / "docker/Dockerfile.repro").read_text()
+        operational = (ROOT / "docs/OPERATIONAL_ENVELOPE.md").read_text()
+
+        runtime_defaults = {
+            "VLLM_USE_V2_MODEL_RUNNER": "1",
+            "VLLM_USE_FLASHINFER_SAMPLER": "1",
+            "VLLM_MARLIN_USE_ATOMIC_ADD": "1",
+            "VLLM_SPARSE_INDEXER_MAX_LOGITS_MB": "256",
+            "SAFETENSORS_FAST_GPU": "1",
+            "CUDA_DEVICE_ORDER": "PCI_BUS_ID",
+            "CUDA_MODULE_LOADING": "LAZY",
+            "CUTE_DSL_ARCH": "sm_121a",
+            "VLLM_EXECUTE_MODEL_TIMEOUT_SECONDS": "1800",
+            "NCCL_CUMEM_ENABLE": "0",
+            "NCCL_MIN_NCHANNELS": "4",
+            "NCCL_MAX_NCHANNELS": "4",
+            "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
+            "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
+            "TORCH_NCCL_ASYNC_ERROR_HANDLING": "1",
+        }
+        for name, value in runtime_defaults.items():
+            self.assertIn(f'export {name}="${{{name}:-{value}}}"', serve)
+            self.assertRegex(env_example, rf"(?m)^{re.escape(name)}={re.escape(value)}$")
+
+        for token in (
+            "VLLM_BUILDA_BMM",
+            "VLLM_MOE_MARLIN_ATOMIC_ADD",
+            "VLLM_USE_B12X_SPARSE_INDEXER",
+            "KV_FP8_ROPE",
+            "--kv-cache-dtype nvfp4_ds_mla",
+            "--attention-backend B12X_MLA_SPARSE",
+        ):
+            self.assertIn(token, serve)
+
+        cache_defaults = {
+            "CUDA_CACHE_PATH": "cuda",
+            "VLLM_CACHE_ROOT": "vllm",
+            "B12X_CUTE_COMPILE_CACHE_DIR": "b12x-cute",
+            "TRITON_CACHE_DIR": "triton",
+            "TORCHINDUCTOR_CACHE_DIR": "torchinductor",
+            "TORCH_EXTENSIONS_DIR": "torch-extensions",
+        }
+        self.assertIn('o14_cache_root="${O14_JIT_CACHE_ROOT:-', serve)
+        self.assertIn('export XDG_CACHE_HOME="${XDG_CACHE_HOME:-${o14_cache_root}/xdg}"', serve)
+        for name, suffix in cache_defaults.items():
+            self.assertIn(
+                f'export {name}="${{{name}:-${{o14_cache_root}}/{suffix}}}"',
+                serve,
+            )
+            self.assertRegex(
+                env_example,
+                rf"(?m)^{re.escape(name)}=/var/cache/o14/{re.escape(suffix)}$",
+            )
+        self.assertRegex(env_example, r"(?m)^O14_JIT_CACHE_ROOT=/var/cache/o14$")
+        self.assertRegex(env_example, r"(?m)^XDG_CACHE_HOME=/var/cache/o14/xdg$")
+
+        self.assertIn(
+            'export CUDA_DEVICE_MAX_CONNECTIONS="${O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS:-32}"',
+            serve,
+        )
+        self.assertRegex(env_example, r"(?m)^CUDA_DEVICE_MAX_CONNECTIONS=4$")
+        self.assertRegex(
+            env_example,
+            r"(?m)^O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS=32$",
+        )
+        self.assertIn("`CUDA_DEVICE_MAX_CONNECTIONS=4`", operational)
+        self.assertIn("`O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS`", operational)
+        self.assertIn("default is `32`", operational)
+        self.assertIn("source-inferred", operational)
+        self.assertIn("does not include a direct per-worker process-environment capture", operational)
+
+        self.assertIn("TRITON_PTXAS_PATH=/usr/local/cuda/bin/ptxas", dockerfile)
+        self.assertIn("TORCH_CUDA_ARCH_LIST=12.1a", dockerfile)
+        self.assertIn("FLASHINFER_CUDA_ARCH_LIST=12.1a", dockerfile)
+
+        self.assertEqual(len(INDEX_TOPK_PATTERN), 78)
+        hf_override = json.dumps(
+            {"use_index_cache": True, "index_topk_pattern": INDEX_TOPK_PATTERN},
+            separators=(",", ":"),
+        )
+        self.assertIn(f"--hf-overrides '{hf_override}'", serve)
+
+        stale_defaults = (
+            "R17_DRAFT_TEMP_SCALE",
+            "VLLM_NVFP4_GEMM_BACKEND",
+            "VLLM_NVFP4_ALLOW_SLOW_FALLBACK",
+            "VLLM_QUANTIZATION_DISABLE_FUSED_MOE",
+        )
+        for name in stale_defaults:
+            self.assertNotIn(name, serve)
+            self.assertNotIn(name, env_example)
+
+        for name in TOPOLOGY_VARIABLES:
+            self.assertIn(f"`{name}`", operational)
+            self.assertIsNone(
+                re.search(rf"(?m)^\s*(?:export\s+)?{re.escape(name)}\s*=", operational)
+            )
+        for token in (
+            "GPU access",
+            "host networking and host IPC",
+            "16 GiB of shared memory",
+            "unlimited memlock",
+            "operator-selected RDMA device mappings",
+            "writable persistent cache mount",
+            "rather than a socket fallback",
+        ):
+            self.assertIn(token, operational)
+        self.assertIsNone(re.search(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b", operational))
+        self.assertIsNone(re.search(r"/(?:Users|home)/", operational))
+
+        expected_links = {
+            "recipe/README.md": "../docs/OPERATIONAL_ENVELOPE.md",
+            "docs/PUBLIC_BUILD.md": "OPERATIONAL_ENVELOPE.md",
+            "reproducibility/README.md": "../docs/OPERATIONAL_ENVELOPE.md",
+        }
+        for relative, link in expected_links.items():
+            self.assertIn(link, (ROOT / relative).read_text())
+
+        with tempfile.TemporaryDirectory() as tmp:
+            model = pathlib.Path(tmp)
+            render_env = os.environ.copy()
+            render_env.update(
+                MODEL_PATH=str(model),
+                HOME=str(model),
+                O14_LMHEAD_PROFILE="off",
+                O14_EXECUTE="0",
+            )
+            for name in (*runtime_defaults, "O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS"):
+                render_env.pop(name, None)
+            rendered = subprocess.run(
+                ["bash", str(script)],
+                env=render_env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(rendered.returncode, 0, rendered.stderr)
+            argv = shlex.split(rendered.stdout)
+
+            def option(name: str) -> str:
+                return argv[argv.index(name) + 1]
+
+            self.assertEqual(option("--download-dir"), str(model))
+            self.assertEqual(option("--load-format"), "auto")
+            self.assertEqual(json.loads(option("--hf-overrides")), json.loads(hf_override))
+            spec = json.loads(option("--speculative-config"))
+            self.assertEqual(spec["draft_sample_method"], "probabilistic")
+            self.assertEqual(spec["rejection_sample_method"], "block")
+
+            refused = subprocess.run(
+                ["bash", str(script), "serve"],
+                env=render_env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(refused.returncode, 64)
+            self.assertIn("Refusing execution", refused.stderr)
+
     def test_runtime_recipe_accepts_stock_and_optional_sidecar_profiles(self) -> None:
         script = ROOT / "recipe/serve-o14.sh"
         with tempfile.TemporaryDirectory() as tmp:
