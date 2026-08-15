@@ -1,6 +1,6 @@
 # O14 operational performance envelope
 
-This document defines the public operator-supplied boundary around the measured O14 recipe. The defaults in `recipe/o14.env.example` and `recipe/serve-o14.sh` were recovered from the preserved launch recipe and source-complete runtime package; repository tests bind those reconstructed values. A clean public image build, live cluster launch, and benchmark rerun remain separate, unproven steps.
+This document defines the public operator-supplied boundary around **O14 Fast — 250K total KV, READY**. The current capacity defaults in `recipe/o14.env.example` and `recipe/serve-o14.sh` are `MAX_MODEL_LEN=249000` and `KV_CACHE_MEMORY_BYTES=7995534848` bytes per rank. The remaining runtime settings come from the source-complete O14 package and preserved operating envelope; repository tests bind the published values. No public O14 Fast OCI image is claimed.
 
 ## Per-rank environment
 
@@ -38,7 +38,7 @@ Set `O14_JIT_CACHE_ROOT` explicitly to the persistent cache mount inside the con
 
 ## Published runtime defaults
 
-These defaults reconstruct the preserved launch envelope. A variable's presence records the recipe; it is not, by itself, proof that a runtime branch fired.
+The capacity values are the current O14 Fast recipe. Other defaults reconstruct the preserved operating envelope. A variable's presence records the recipe; it is not, by itself, proof that a runtime branch fired.
 
 | Variables | Consumer / classification | Evidence boundary |
 |---|---|---|
@@ -55,7 +55,7 @@ The recovered wrapper intentionally omits `R17_DRAFT_TEMP_SCALE`, `VLLM_NVFP4_GE
 
 ## Driver/rank CUDA connection split
 
-The measured setup shows two `CUDA_DEVICE_MAX_CONNECTIONS` layers:
+The historical campaign setup showed two `CUDA_DEVICE_MAX_CONNECTIONS` layers, retained in the current Fast operating recipe:
 
 1. the preserved rank-container environment records the base value `4` before Ray or model processes start;
 2. `recipe/serve-o14.sh` sets the API-driver process from `O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS`, whose default is `32`. Setting `CUDA_DEVICE_MAX_CONNECTIONS` directly before invoking the wrapper does not override this driver value; use the `O14_` variable.
@@ -76,4 +76,4 @@ Use `recipe/o14.env.example` as a starting point, supply the per-rank variables 
 bash recipe/serve-o14.sh render
 ```
 
-Rendering is the default. Starting the API server still requires both the `serve` argument and `O14_EXECUTE=1`. Rank formation, checkpoint placement, RDMA selection, health checks, and rollback remain operator-controlled.
+Rendering is the default. The Fast-only wrapper refuses every other profile before rendering or serving. Starting the API server requires `O14_PROFILE_NAME=o14-fast`, `O14_PROFILE_STATUS=READY`, the `serve` argument, and `O14_EXECUTE=1`. Rank formation, checkpoint placement, RDMA selection, health checks, and rollback remain operator-controlled.

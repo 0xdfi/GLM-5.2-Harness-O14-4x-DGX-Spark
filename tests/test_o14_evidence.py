@@ -27,6 +27,99 @@ TOPOLOGY_VARIABLES = (
 
 
 class O14EvidenceTest(unittest.TestCase):
+    def test_profile_selector_and_exact_fast_geometry(self) -> None:
+        selector = json.loads((ROOT / "profiles/o14-profiles.json").read_text())
+        self.assertEqual(selector["selector_policy"]["deployable_statuses"], ["READY"])
+        self.assertEqual(selector["selector_policy"]["unknown_profile_action"], "PLAN_ONLY")
+        self.assertEqual(selector["canonical_source"]["commit_pin_source"], "consumer")
+        self.assertIsNone(selector["canonical_source"]["canonical_commit"])
+        self.assertEqual(selector["fabric"]["switch_class_gbps"], 100)
+        self.assertEqual(selector["fabric"]["expected_active_rdma_link_mbps"], 100000)
+
+        fast = selector["profiles"]["o14-fast"]
+        balanced = selector["profiles"]["o14-balanced"]
+        self.assertEqual(fast["status"], "READY")
+        self.assertEqual(fast["status_label"], "O14 Fast — 250K total KV, READY")
+        self.assertTrue(fast["deployable"])
+        self.assertEqual(fast["topology"], {
+            "tensor_parallel_size": 4,
+            "decode_context_parallel_size": 1,
+            "pipeline_parallel_size": 1,
+        })
+        capacity = fast["capacity"]
+        self.assertEqual(capacity["public_total_kv_label"], "250K total KV")
+        self.assertEqual(capacity["allocator_total_logical_kv_tokens"], 250023)
+        self.assertEqual(capacity["kv_cache_memory_bytes_per_rank"], 7995534848)
+        self.assertEqual(capacity["max_model_len"], 249000)
+        self.assertEqual(capacity["max_num_seqs"], 4)
+        self.assertEqual(capacity["max_num_batched_tokens"], 2048)
+        geometry = capacity["geometry"]
+        self.assertEqual(79 * 368 + 22 * 132, geometry["bytes_per_local_token_per_rank"])
+        self.assertEqual(geometry["bytes_per_local_token_per_rank"] * 64, 2046464)
+        self.assertEqual(geometry["selected_blocks"] * 2046464, 7995534848)
+        self.assertEqual((249000 + 63) // 64, geometry["blocks_per_max_request"])
+        self.assertEqual(geometry["selected_blocks"] * 249000 // 3891, 250023)
+        self.assertEqual((geometry["selected_blocks"] - 1) * 249000 // 3891, 249959)
+        self.assertFalse(fast["image"]["public_image_available"])
+        self.assertIsNone(fast["image"]["reference"])
+        for referenced_path in (
+            fast["historical_evidence"]["receipt"],
+            fast["build"]["dockerfile"],
+            fast["build"]["checksum_manifest"],
+        ):
+            self.assertTrue((ROOT / referenced_path).is_file(), referenced_path)
+
+        self.assertEqual(balanced["status"], "TESTING")
+        self.assertFalse(balanced["deployable"])
+        self.assertEqual(balanced["status_label"], "TESTING / DO NOT DEPLOY")
+        self.assertEqual(balanced["capacity"]["target_total_logical_kv_tokens"], 500000)
+        self.assertEqual(balanced["capacity"]["allocator_expected_tokens"], 500237)
+        self.assertEqual(balanced["capacity"]["kv_cache_memory_bytes_per_rank"], 8000000000)
+        self.assertEqual(balanced["capacity"]["max_model_len"], 490000)
+        self.assertFalse(balanced["image"]["public_image_available"])
+        self.assertIsNone(balanced["image"]["reference"])
+        self.assertIsNone(balanced["image"]["digest"])
+        self.assertEqual(balanced["image"]["required_digest_algorithm_after_acceptance"], "sha256")
+        self.assertIsNone(balanced["build"]["method"])
+        self.assertEqual(balanced["benchmark"]["status"], "TBD")
+        self.assertIsNone(balanced["benchmark"]["capacity_measured_tokens"])
+        self.assertIsNone(balanced["benchmark"]["prefill_tokens_per_second"])
+        self.assertIsNone(balanced["benchmark"]["decode_tokens_per_second"])
+
+        env_example = (ROOT / "recipe/o14.env.example").read_text()
+        self.assertRegex(env_example, r"(?m)^O14_PROFILE_NAME=o14-fast$")
+        self.assertRegex(env_example, r"(?m)^O14_PROFILE_STATUS=READY$")
+        self.assertRegex(env_example, r"(?m)^MAX_MODEL_LEN=249000$")
+        self.assertRegex(env_example, r"(?m)^KV_CACHE_MEMORY_BYTES=7995534848$")
+
+        agents = (ROOT / "AGENTS.md").read_text()
+        self.assertIn("Continue to build or serve only when `status` is exactly `READY`", agents)
+        self.assertIn("Do not build, pull, or launch Balanced", agents)
+        self.assertIn("Do not derive a Balanced tag from Fast", agents)
+        self.assertNotIn("docker pull", agents)
+
+    def test_fast_launcher_refuses_balanced_before_render(self) -> None:
+        script = ROOT / "recipe/serve-o14.sh"
+        with tempfile.TemporaryDirectory() as tmp:
+            for self_attested_status in ("TESTING", "READY"):
+                env = os.environ.copy()
+                env.update(
+                    MODEL_PATH=tmp,
+                    O14_LMHEAD_PROFILE="off",
+                    O14_PROFILE_NAME="o14-balanced",
+                    O14_PROFILE_STATUS=self_attested_status,
+                )
+                refused = subprocess.run(
+                    ["bash", str(script), "render"],
+                    env=env,
+                    text=True,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(refused.returncode, 65)
+                self.assertEqual(refused.stdout, "")
+                self.assertIn("only O14 Fast — 250K total KV, READY may render or serve", refused.stderr)
+
     def test_operational_performance_envelope(self) -> None:
         script = ROOT / "recipe/serve-o14.sh"
         serve = script.read_text()
@@ -198,6 +291,10 @@ class O14EvidenceTest(unittest.TestCase):
 
             self.assertEqual(option("--download-dir"), str(model))
             self.assertEqual(option("--load-format"), "auto")
+            self.assertEqual(option("--max-model-len"), "249000")
+            self.assertEqual(option("--kv-cache-memory-bytes"), "7995534848")
+            self.assertEqual(option("--max-num-seqs"), "4")
+            self.assertEqual(option("--max-num-batched-tokens"), "2048")
             self.assertEqual(json.loads(option("--hf-overrides")), json.loads(hf_override))
             spec = json.loads(option("--speculative-config"))
             self.assertEqual(spec["draft_sample_method"], "probabilistic")

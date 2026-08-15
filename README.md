@@ -1,20 +1,31 @@
 # GLM-5.2 Harness O14 on 4× DGX Spark
 
-> **Optimization target:** O14 is a production profile for up to four concurrent streams doing varied agent work, including natural prose. The objective is the highest sustained average decode speed across that mixed workload while preserving 399K context and exact output behavior. O14 is not tuned to win a single-stream peak test on one predictable prompt.
+> **Current named profiles:** **O14 Fast — 250K total KV, READY** on TP4/DCP1/PP1. **O14 Balanced** is a TP4/DCP2/PP1 500K target in `TESTING / DO NOT DEPLOY` status. Automation must read [`profiles/o14-profiles.json`](profiles/o14-profiles.json) and deploy only entries whose status is exactly `READY`, whose `deployable` field is `true`, and whose profile-specific artifact gates pass.
 >
-> **Benchmark shape:** The reported prose battery includes two C1 runs and two C4 runs with cache-busted prompts and a 1,024-output-token cap per stream. C4 is aggregate decode across four simultaneous requests. The peak probes generated 900 tokens at C1 and 3,515 total at C4. The cold-prefill gate used a 187,022-token prompt. Throughput was calculated from request usage and vLLM server counters over the measured wall window. See the [full protocol and raw values](docs/BENCHMARKS.md).
+> **Historical benchmark record:** the retained speed rows below belong to the historical 399K O14 campaign. Balanced speed is `TBD`. The historical prose battery includes two C1 and two C4 runs with cache-busted prompts and a 1,024-output-token cap per stream. See the [full protocol and raw values](docs/BENCHMARKS.md).
 
-Source-complete public reconstruction pack for the O14 configuration measured and left serving on a four-node DGX Spark/GB10 cluster on 2026-08-13.
+This repository is the source-complete public reconstruction pack for the O14 runtime family. It now publishes an exact O14 Fast recipe and a fail-closed O14 Balanced phase-1 placeholder while preserving the historical O14 receipts unchanged.
 
-O14 is a TP4, 399K-context GLM-5.2 serving stack built on the vLLM 0.27 line. The complete public recipe contains **74 vLLM runtime files + 3 B12X files + a 14-path native patch**, exact binary-input hashes, and the launch contract. The older campaign counts of 26 release files and 27 Python files were historical, overlapping scopes. The stack includes sparse MLA, compact NVFP4 KV, adaptive MTP, full CUDA graphs, a custom Triton MLA BMM, an exact-rescore W8 head path, and an env-gated Marlin MoE change.
+The historical 2026-08-13 campaign measured a TP4/DCP1/PP1, 399K-context GLM-5.2 stack built on the vLLM 0.27 line. The complete public recipe contains **74 vLLM runtime files + 3 B12X files + a 14-path native patch**, exact binary-input hashes, and the launch contract. It includes sparse MLA, compact NVFP4 KV, adaptive MTP, full CUDA graphs, a custom Triton MLA BMM, an exact-rescore W8 head path, and an env-gated Marlin MoE change.
 
-This repository contains the complete runtime assembly recipe, pinned public bases and wheels, exact manifests, the publishable serving command, sanitized benchmark protocols, and a provenance boundary. The two exact local wheel inputs are distributed as checksum-bound GitHub Release assets. Checkpoint and sidecar weights are not bundled.
+This repository contains the complete runtime assembly recipe, pinned public bases and wheels, exact manifests, the publishable serving command, sanitized benchmark protocols, and a provenance boundary. The two exact local wheel inputs are distributed as checksum-bound GitHub Release assets. Checkpoint and sidecar weights are not bundled. No public O14 Fast or O14 Balanced OCI image is claimed.
 
-## Measured O14 results
+## Current profiles
 
-The final battery used cache-busted prompts and server counters to prevent prefix-cache inflation:
+| profile | status | topology | total logical KV | max request | image / build |
+|---|---|---|---:|---:|---|
+| **O14 Fast** | **READY** | TP4 / DCP1 / PP1 | **250K total KV** | 249000 | no public OCI image; source build from pinned commit |
+| **O14 Balanced** | **TESTING / DO NOT DEPLOY** | TP4 / DCP2 / PP1 | 500K target; 500237 allocator expectation | 490000 | no image or build release; separate v3 image required after acceptance |
 
-| workload | result |
+O14 Fast's exact machine recipe is allocator `250023`, `KV_CACHE_MEMORY_BYTES=7995534848` bytes per rank, `MAX_MODEL_LEN=249000`, `MAX_NUM_SEQS=4`, and `MAX_NUM_BATCHED_TOKENS=2048`. Its block arithmetic is documented in [`recipe/README.md`](recipe/README.md). Balanced uses an expected `8000000000` bytes per rank and `MAX_MODEL_LEN=490000`; measured capacity and speed remain `TBD` until live acceptance.
+
+The public topology uses a 100GbE switch; 100000 Mb/s per active RDMA link is expected. Operators supply all addresses, interface/HCA names, device mappings, and host paths.
+
+## Historical 399K O14 campaign results
+
+The retained battery used cache-busted prompts and server counters to prevent prefix-cache inflation:
+
+| workload | historical result |
 |---|---:|
 | cold prose, C1 decode | **25.40 / 25.61 tok/s** |
 | cold prose, C4 aggregate decode | **54.68 / 53.62 tok/s** |
@@ -22,13 +33,15 @@ The final battery used cache-busted prompts and server counters to prevent prefi
 | predictable/code-class peak, C4 aggregate | **80.56 tok/s**, 3.934 accepted/step |
 | cold prefill, 187,022 tokens | **661.1 tok/s** over 282.9 s |
 
-Compared with the R15 starting point, the campaign reports roughly **+6–8% prose C1**, **+4–5% prose C4**, and **+2.5% cold prefill**. O14, o10, and o12-A remain inside the campaign's ±5% noise band at only one or two repeated batteries. This package does not claim that each O14 micro-change independently caused a statistically resolved end-to-end gain.
+Compared with the R15 starting point, the historical campaign reported roughly **+6–8% prose C1**, **+4–5% prose C4**, and **+2.5% cold prefill**. O14, o10, and o12-A remained inside the campaign's ±5% noise band at only one or two repeated batteries. This package does not claim that each O14 micro-change independently caused a statistically resolved end-to-end gain.
 
 See [docs/BENCHMARKS.md](docs/BENCHMARKS.md) and [evidence/final-o14-battery.jsonl](evidence/final-o14-battery.jsonl).
 
-## Live runtime identity captured for this upload
+## Historical runtime identity captured for the 399K campaign
 
-| item | identity |
+This identity belongs to the historical benchmark evidence. The tag and digest below are not a public pullable image and must not be used as an image release claim.
+
+| item | historical identity |
 |---|---|
 | hardware | 4× NVIDIA DGX Spark / GB10, one rank per node, RoCEv2 |
 | parallelism | TP4 / DCP1 / PP1 |
@@ -86,7 +99,7 @@ sequence, evidence requirements, and no-spam engagement plan.
 
 ## Repository map
 
-- [`recipe/serve-o14.sh`](recipe/serve-o14.sh): render-first server command matching the live envelope.
+- [`recipe/serve-o14.sh`](recipe/serve-o14.sh): render-first server command for O14 Fast.
 - [`recipe/o14.env.example`](recipe/o14.env.example): required and performance-relevant environment.
 - [`docker/Dockerfile.o14-overlay`](docker/Dockerfile.o14-overlay): legacy six-file convenience layer; not the source-complete route.
 - [`docker/Dockerfile.repro`](docker/Dockerfile.repro): complete checksum-bound public runtime assembly recipe.
@@ -105,18 +118,22 @@ sequence, evidence requirements, and no-spam engagement plan.
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 reproducibility/verify.py
-docker build -f docker/Dockerfile.repro -t glm52-o14:public-repro .
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/validate.py
+python3 -m unittest discover -s tests -v
+shasum -a 256 -c SHA256SUMS
 
-cp recipe/o14.env.example .env.o14
-# Fill MODEL_PATH and confirm your compatible image/runtime.
-set -a; source .env.o14; set +a
+docker build -f docker/Dockerfile.repro -t glm52-o14-fast:local .
+
+cp recipe/o14.env.example .env.o14-fast
+# Fill MODEL_PATH and supply your own rank/fabric topology.
+set -a; source .env.o14-fast; set +a
 bash recipe/serve-o14.sh render
 ```
 
-The serving script renders by default. It executes only with `O14_EXECUTE=1` and refuses to run if the model path is missing. The runtime accepts stock QuantTrio and weight-modified/obliterated QuantTrio checkpoints. `O14_LMHEAD_PROFILE=auto` makes the W8 sidecar optional and enables exact-head rescoring only when that file is present. Four-node Ray/RDMA formation, checkpoint placement, and rollback remain operator responsibilities.
+The serving script renders by default. It executes only when `O14_PROFILE_NAME=o14-fast`, `O14_PROFILE_STATUS=READY`, and `O14_EXECUTE=1` are combined with the `serve` argument. It refuses unknown or non-READY profiles. The runtime accepts the documented GLM-5.2 QuantTrio checkpoint family; `O14_LMHEAD_PROFILE=auto` makes the W8 sidecar optional and enables exact-head rescoring only when that file is present. Four-node Ray/RDMA formation, checkpoint placement, health checks, and rollback remain operator responsibilities.
 
 ## Claim boundary
 
-Runtime recipe publication is complete for the known O14 surfaces: exact public bases and target hashes reconstruct all 74 vLLM runtime files, 3 B12X files, the 14-path native patch, and the FlashInfer compatibility edit. A clean public image build is not yet claimed. Exact benchmark replication further requires the same checkpoint family and W8 sidecar, four GB10 nodes, equivalent topology, TP4, 399K NVFP4 KV, C≤4, and the stated sampling/graph policy. These numbers are not a general vLLM benchmark.
+Runtime recipe publication is complete for the known O14 surfaces: exact public bases and target hashes reconstruct all 74 vLLM runtime files, 3 B12X files, the 14-path native patch, and the FlashInfer compatibility edit. **O14 Fast — 250K total KV, READY** is source-built from this repository; no public OCI image or anonymous-pull claim exists. O14 Balanced remains TESTING with no released build or image. Exact historical benchmark replication further requires the same checkpoint family and W8 sidecar, four GB10 nodes, equivalent topology, TP4, the historical 399K NVFP4 KV envelope, C≤4, and the stated sampling/graph policy. The retained speed numbers are historical campaign evidence, not a general vLLM benchmark.
 
 Apache-2.0. Third-party projects and checkpoint weights retain their own licenses.
