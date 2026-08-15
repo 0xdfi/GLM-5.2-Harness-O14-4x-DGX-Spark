@@ -105,6 +105,7 @@ mla = (ROOT / "overlays/mla_attention.py").read_text()
 dockerfile = (ROOT / "docker/Dockerfile.o14-overlay").read_text()
 dockerfile_repro = (ROOT / "docker/Dockerfile.repro").read_text()
 operational = (ROOT / "docs/OPERATIONAL_ENVELOPE.md").read_text()
+speculator_source = (ROOT / "overlays/speculator.py").read_text()
 for token in ("O14_EXECUTE", "B12X_MLA_SPARSE", "nvfp4_ds_mla", "6,12,18,24"):
     assert token in serve, token
 assert "VLLM_BUILDA_BMM" in serve
@@ -160,6 +161,7 @@ hf_override = json.dumps(
     separators=(",", ":"),
 )
 assert f"--hf-overrides '{hf_override}'" in serve
+assert "78-layer full/sparse attention schedule" in operational
 
 assert 'export CUDA_DEVICE_MAX_CONNECTIONS="${O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS:-32}"' in serve
 assert re.search(r"(?m)^CUDA_DEVICE_MAX_CONNECTIONS=4$", env)
@@ -167,8 +169,8 @@ assert re.search(r"(?m)^O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS=32$", env)
 assert "`CUDA_DEVICE_MAX_CONNECTIONS=4`" in operational
 assert "`O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS`" in operational
 assert "default is `32`" in operational
-assert "source-inferred" in operational
-assert "does not include a direct per-worker process-environment capture" in operational
+assert "inference from source, not an observation" in operational
+assert "direct per-worker process-environment capture" in operational
 
 for token in (
     'o14_cache_root="${O14_JIT_CACHE_ROOT:-',
@@ -202,15 +204,20 @@ for token in (
     "FLASHINFER_CUDA_ARCH_LIST=12.1a",
 ):
     assert token in dockerfile_repro, token
+assert "CUDA_DEVICE_MAX_CONNECTIONS" not in dockerfile_repro
+assert '_R17_DRAFT_TEMP_SCALE = float(os.environ.get("R17_DRAFT_TEMP_SCALE", "1.0"))' in speculator_source
 
-for name in (
+unsupported_unconsumed_overrides = (
     "R17_DRAFT_TEMP_SCALE",
     "VLLM_NVFP4_GEMM_BACKEND",
     "VLLM_NVFP4_ALLOW_SLOW_FALLBACK",
     "VLLM_QUANTIZATION_DISABLE_FUSED_MOE",
-):
+)
+for name in unsupported_unconsumed_overrides:
     assert name not in serve, name
     assert name not in env, name
+assert "intentionally omits" in operational
+assert "source-complete O14 runtime published here contains no consumer" in operational
 
 topology_variables = (
     "RAY_ADDRESS",
@@ -241,6 +248,17 @@ for token in (
     assert token in operational, token
 assert re.search(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b", operational) is None
 assert re.search(r"/(?:Users|home)/", operational) is None
+private_ipv4 = r"\b(?:10\.|192\.168\.|169\.254\.|172\.(?:1[6-9]|2[0-9]|3[01])\.)"
+for public_launch_text in (serve, env):
+    assert re.search(private_ipv4, public_launch_text) is None
+    assert re.search(r"/(?:Users|home)/", public_launch_text) is None
+for token in (
+    "operator-prepared local checkpoint directory",
+    "does not authorize an agent",
+    "XDG cache itself is not relocated",
+    "No checked-in O14 overlay consumes these names",
+):
+    assert token in operational, token
 for relative, link in {
     "recipe/README.md": "../docs/OPERATIONAL_ENVELOPE.md",
     "docs/PUBLIC_BUILD.md": "OPERATIONAL_ENVELOPE.md",

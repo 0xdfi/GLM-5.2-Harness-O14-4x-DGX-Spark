@@ -31,7 +31,8 @@ export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:T
 export VLLM_WORKER_MULTIPROC_METHOD="${VLLM_WORKER_MULTIPROC_METHOD:-spawn}"
 export TORCH_NCCL_ASYNC_ERROR_HANDLING="${TORCH_NCCL_ASYNC_ERROR_HANDLING:-1}"
 
-# API-driver value; rank containers use a separate measured base value.
+# API-driver value; rank containers use a separate measured base value. Set the
+# driver override through O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS, not the base name.
 export CUDA_DEVICE_MAX_CONNECTIONS="${O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS:-32}"
 
 o14_cache_root="${O14_JIT_CACHE_ROOT:-${XDG_CACHE_HOME:-${HOME:-/tmp}/.cache}/o14}"
@@ -99,6 +100,8 @@ args=(
   python3 -m vllm.entrypoints.openai.api_server
   --model "${MODEL_PATH}" --tokenizer "${MODEL_PATH}"
   --served-model-name "${SERVED_MODEL_NAME:-glm-5.2}"
+  # MODEL_PATH is an operator-prepared local checkpoint and also bounds any
+  # dependency cache lookup; launch is not an instruction to download weights.
   --trust-remote-code --download-dir "${MODEL_PATH}" --load-format auto
   --quantization compressed-tensors
   --distributed-executor-backend ray

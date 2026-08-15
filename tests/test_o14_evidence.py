@@ -33,6 +33,7 @@ class O14EvidenceTest(unittest.TestCase):
         env_example = (ROOT / "recipe/o14.env.example").read_text()
         dockerfile = (ROOT / "docker/Dockerfile.repro").read_text()
         operational = (ROOT / "docs/OPERATIONAL_ENVELOPE.md").read_text()
+        speculator_source = (ROOT / "overlays/speculator.py").read_text()
 
         runtime_defaults = {
             "VLLM_USE_V2_MODEL_RUNNER": "1",
@@ -99,12 +100,17 @@ class O14EvidenceTest(unittest.TestCase):
         self.assertIn("`CUDA_DEVICE_MAX_CONNECTIONS=4`", operational)
         self.assertIn("`O14_DRIVER_CUDA_DEVICE_MAX_CONNECTIONS`", operational)
         self.assertIn("default is `32`", operational)
-        self.assertIn("source-inferred", operational)
-        self.assertIn("does not include a direct per-worker process-environment capture", operational)
+        self.assertIn("inference from source, not an observation", operational)
+        self.assertIn("direct per-worker process-environment capture", operational)
 
         self.assertIn("TRITON_PTXAS_PATH=/usr/local/cuda/bin/ptxas", dockerfile)
         self.assertIn("TORCH_CUDA_ARCH_LIST=12.1a", dockerfile)
         self.assertIn("FLASHINFER_CUDA_ARCH_LIST=12.1a", dockerfile)
+        self.assertNotIn("CUDA_DEVICE_MAX_CONNECTIONS", dockerfile)
+        self.assertIn(
+            '_R17_DRAFT_TEMP_SCALE = float(os.environ.get("R17_DRAFT_TEMP_SCALE", "1.0"))',
+            speculator_source,
+        )
 
         self.assertEqual(len(INDEX_TOPK_PATTERN), 78)
         hf_override = json.dumps(
@@ -112,16 +118,22 @@ class O14EvidenceTest(unittest.TestCase):
             separators=(",", ":"),
         )
         self.assertIn(f"--hf-overrides '{hf_override}'", serve)
+        self.assertIn("78-layer full/sparse attention schedule", operational)
 
-        stale_defaults = (
+        unsupported_unconsumed_overrides = (
             "R17_DRAFT_TEMP_SCALE",
             "VLLM_NVFP4_GEMM_BACKEND",
             "VLLM_NVFP4_ALLOW_SLOW_FALLBACK",
             "VLLM_QUANTIZATION_DISABLE_FUSED_MOE",
         )
-        for name in stale_defaults:
+        for name in unsupported_unconsumed_overrides:
             self.assertNotIn(name, serve)
             self.assertNotIn(name, env_example)
+        self.assertIn("intentionally omits", operational)
+        self.assertIn(
+            "source-complete O14 runtime published here contains no consumer",
+            operational,
+        )
 
         for name in TOPOLOGY_VARIABLES:
             self.assertIn(f"`{name}`", operational)
@@ -140,6 +152,17 @@ class O14EvidenceTest(unittest.TestCase):
             self.assertIn(token, operational)
         self.assertIsNone(re.search(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b", operational))
         self.assertIsNone(re.search(r"/(?:Users|home)/", operational))
+        private_ipv4 = r"\b(?:10\.|192\.168\.|169\.254\.|172\.(?:1[6-9]|2[0-9]|3[01])\.)"
+        for public_launch_text in (serve, env_example):
+            self.assertIsNone(re.search(private_ipv4, public_launch_text))
+            self.assertIsNone(re.search(r"/(?:Users|home)/", public_launch_text))
+        for token in (
+            "operator-prepared local checkpoint directory",
+            "does not authorize an agent",
+            "XDG cache itself is not relocated",
+            "No checked-in O14 overlay consumes these names",
+        ):
+            self.assertIn(token, operational)
 
         expected_links = {
             "recipe/README.md": "../docs/OPERATIONAL_ENVELOPE.md",
