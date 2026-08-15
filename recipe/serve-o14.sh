@@ -3,6 +3,8 @@
 set -euo pipefail
 
 MODE="${1:-render}"
+O14_PROFILE_NAME="${O14_PROFILE_NAME:-o14-fast}"
+O14_PROFILE_STATUS="${O14_PROFILE_STATUS:-READY}"
 : "${MODEL_PATH:?Set MODEL_PATH to the mounted checkpoint directory}"
 
 export VLLM_ADAPTIVE_SPEC_DEPTHS="${VLLM_ADAPTIVE_SPEC_DEPTHS:-2,4,5}"
@@ -109,14 +111,14 @@ args=(
   --decode-context-parallel-size 1
   --pipeline-parallel-size 1
   --gpu-memory-utilization "${GPU_MEMORY_UTILIZATION:-0.90}"
-  --max-model-len "${MAX_MODEL_LEN:-399000}"
+  --max-model-len "${MAX_MODEL_LEN:-249000}"
   --max-num-seqs "${MAX_NUM_SEQS:-4}"
   --max-num-batched-tokens "${MAX_NUM_BATCHED_TOKENS:-2048}"
   --generation-config vllm
   --override-generation-config '{"temperature":1.0,"top_p":0.95,"top_k":40}'
   --port "${PORT:-8211}" --host "${HOST:-0.0.0.0}"
   --no-enable-log-requests
-  --kv-cache-memory-bytes "${KV_CACHE_MEMORY_BYTES:-12792889000}"
+  --kv-cache-memory-bytes "${KV_CACHE_MEMORY_BYTES:-7995534848}"
   --kv-cache-dtype nvfp4_ds_mla
   --attention-backend B12X_MLA_SPARSE
   --moe-backend marlin
@@ -132,6 +134,11 @@ args=(
   --hf-overrides '{"use_index_cache":true,"index_topk_pattern":"FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS"}'
   --enable-prefix-caching
 )
+
+if [[ "${O14_PROFILE_NAME}" != "o14-fast" || "${O14_PROFILE_STATUS}" != "READY" ]]; then
+  echo "Refusing operation: only O14 Fast — 250K total KV, READY may render or serve; got ${O14_PROFILE_NAME}/${O14_PROFILE_STATUS}." >&2
+  exit 65
+fi
 
 if [[ "${MODE}" == "render" ]]; then
   printf '%q ' "${args[@]}"

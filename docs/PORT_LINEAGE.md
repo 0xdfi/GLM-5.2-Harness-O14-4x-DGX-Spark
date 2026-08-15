@@ -33,7 +33,7 @@ The custom B12X stack is Python/CUTE-DSL source JIT-compiled for the target GPU 
 
 ### NVFP4 compact KV
 
-`nvfp4_ds_mla` required more than a command-line dtype. The port added custom cache-op dispatch, quantized-KV classification, page-size accounting at 368 bytes/token, and attention guards preventing compact layout reinterpretation as generic fp8. O14 reserves 12,792,889,000 bytes per rank and reports roughly 400K-token capacity for a 399K request limit.
+`nvfp4_ds_mla` required more than a command-line dtype. The port added custom cache-op dispatch, quantized-KV classification, page-size accounting at 368 bytes/token, and attention guards preventing compact layout reinterpretation as generic fp8. In the historical 2026-08-13 campaign, that implementation reserved 12,792,889,000 bytes per rank and reported roughly 400K-token capacity for a 399K request limit. Those values describe the preserved historical evidence. The current named recipe is **O14 Fast — 250K total KV, READY**; its exact machine values are in `profiles/o14-profiles.json` and `recipe/README.md`.
 
 ### Build A Triton BMM
 

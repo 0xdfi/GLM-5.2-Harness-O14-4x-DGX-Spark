@@ -1,0 +1,118 @@
+{
+  "schema": "glm52-o14-profile-selector/1",
+  "selector_policy": {
+    "deployable_statuses": [
+      "READY"
+    ],
+    "fail_closed_statuses": [
+      "CANDIDATE",
+      "TESTING",
+      "REJECTED",
+      "SUPERSEDED"
+    ],
+    "unknown_profile_action": "PLAN_ONLY",
+    "require_deployable_true": true,
+    "require_exact_commit_pin": true
+  },
+  "canonical_source": {
+    "repository": "https://github.com/0xdfi/GLM-5.2-Harness-O14-4x-DGX-Spark",
+    "canonical_commit": null,
+    "commit_pin_source": "consumer",
+    "commit_policy": "This in-repository selector cannot self-pin. Consumers must pin the exact checked-out commit."
+  },
+  "fabric": {
+    "switch_class_gbps": 100,
+    "expected_active_rdma_link_mbps": 100000,
+    "operator_supplied_topology": true
+  },
+  "profiles": {
+    "o14-fast": {
+      "display_name": "O14 Fast",
+      "status": "READY",
+      "status_label": "O14 Fast — 250K total KV, READY",
+      "deployable": true,
+      "topology": {
+        "tensor_parallel_size": 4,
+        "decode_context_parallel_size": 1,
+        "pipeline_parallel_size": 1
+      },
+      "capacity": {
+        "public_total_kv_label": "250K total KV",
+        "allocator_total_logical_kv_tokens": 250023,
+        "kv_cache_memory_bytes_per_rank": 7995534848,
+        "max_model_len": 249000,
+        "max_num_seqs": 4,
+        "max_num_batched_tokens": 2048,
+        "geometry": {
+          "main_cache_entries": 79,
+          "main_bytes_per_token": 368,
+          "index_cache_entries": 22,
+          "index_bytes_per_token": 132,
+          "bytes_per_local_token_per_rank": 31976,
+          "block_tokens": 64,
+          "all_layer_block_stride_bytes_per_rank": 2046464,
+          "selected_blocks": 3907,
+          "blocks_per_max_request": 3891,
+          "one_block_lower_total_kv_tokens": 249959
+        }
+      },
+      "image": {
+        "public_image_available": false,
+        "reference": null,
+        "digest": null
+      },
+      "build": {
+        "method": "SOURCE_BUILD",
+        "dockerfile": "docker/Dockerfile.repro",
+        "checksum_manifest": "SHA256SUMS",
+        "model_weights_included": false
+      },
+      "historical_evidence": {
+        "receipt": "evidence/o14-results.json"
+      }
+    },
+    "o14-balanced": {
+      "display_name": "O14 Balanced",
+      "status": "TESTING",
+      "status_label": "TESTING / DO NOT DEPLOY",
+      "deployable": false,
+      "topology": {
+        "tensor_parallel_size": 4,
+        "decode_context_parallel_size": 2,
+        "pipeline_parallel_size": 1
+      },
+      "capacity": {
+        "target_total_logical_kv_tokens": 500000,
+        "allocator_expected_tokens": 500237,
+        "evidence_class": "TESTING_UNTIL_ACCEPTED",
+        "kv_cache_memory_bytes_per_rank": 8000000000,
+        "max_model_len": 490000
+      },
+      "image": {
+        "public_image_available": false,
+        "reference": null,
+        "digest": null,
+        "required_digest_algorithm_after_acceptance": "sha256",
+        "separate_immutable_image_required_after_acceptance": true,
+        "must_not_overwrite_profile": "o14-fast"
+      },
+      "build": {
+        "method": null,
+        "status": "WITHHELD_UNTIL_LIVE_ACCEPTANCE",
+        "required_runtime_source_delta_paths": [
+          "model_executor/layers/sparse_attn_indexer.py",
+          "model_executor/models/deepseek_mtp.py",
+          "model_executor/models/deepseek_v2.py",
+          "v1/attention/backends/mla/sparse_utils.py"
+        ]
+      },
+      "benchmark": {
+        "status": "TBD",
+        "capacity_measured_tokens": null,
+        "prefill_tokens_per_second": null,
+        "decode_tokens_per_second": null
+      },
+      "release_gate": "Publish a separate immutable image, source/build manifest, verified sha256 digest, anonymous-pull proof, live capacity/correctness/reserve receipts, and speed results before changing status to READY."
+    }
+  }
+}

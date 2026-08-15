@@ -1,6 +1,8 @@
 # O14 benchmark record
 
-## Final O14 battery
+> **Historical record:** these receipts belong to the historical 399K O14 campaign. O14 Balanced remains TESTING and has no measured speed row.
+
+## Final historical O14 battery
 
 The values below are exact tool outputs recovered from the final Claude Fable 5 session transcript. The protocol used cache-busted prompts and server counters to avoid prefix-cache inflation. The sanitized probe sources are published in `benchmarks/`; the recovered records are in `evidence/final-o14-battery.jsonl`.
 
